@@ -1,0 +1,10 @@
+name = "vc"
+version = "0.1.0"
+defaultTargets = ["vc"]
+
+[[lean_lib]]
+name = "Vc"
+
+[[lean_exe]]
+name = "vc"
+root = "Main"
