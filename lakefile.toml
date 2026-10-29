@@ -3,8 +3,8 @@ version = "0.1.0"
 defaultTargets = ["vc"]
 
 [[lean_lib]]
-name = "Vc"
+name = "vc"
 
 [[lean_exe]]
-name = "vc"
+name = "vcl"
 root = "Main"
