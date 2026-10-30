@@ -2,7 +2,6 @@ import vc.token
 import Lean
 
 -- set_option pp.all true in
-
 -- set_option trace.Elab.step true in
 -- set_option trace.Elab.definition true in
 -- set_option trace.Elab.command true in
@@ -119,19 +118,20 @@ syntax
   ";"
   module_item*
   "endmodule" : module_declaration
-syntax "(" port_declaration,* ")" : list_of_port_declarations
+syntax "(" port_declaration,+ ")" : list_of_port_declarations
+syntax "(" ")" : list_of_port_declarations
 syntax ("module" <|> "macromodule"): module_keyword
-syntax (input_declaration <|> output_declaration) : port_declaration
+syntax input_declaration  : port_declaration
+-- syntax output_declaration : port_declaration
 syntax "input" (net_type)? list_of_port_identifiers : input_declaration
 syntax "output" (net_type)? list_of_port_identifiers : output_declaration
 syntax "output" "reg" list_of_port_identifiers : output_declaration
 syntax "wire" : net_type
-syntax port_identifier,* : list_of_port_identifiers
+syntax port_identifier,+ : list_of_port_identifiers
 syntax identifier : port_identifier
 syntax identifier : module_identifier
 syntax ident : identifier
 
-syntax ident : input_declaration
 syntax ident : output_declaration
 syntax ident : module_item
 -- syntax "module_identifier[" identifier "]": module_identifier
@@ -238,22 +238,28 @@ macro_rules
       `(term| VL.module_declaration.mk $d' $i' none)
 
 macro_rules
-  | `(list_of_port_declarations[ () ])
+  | `(term|list_of_port_declarations[ () ])
     => `( term| VL.list_of_port_declarations.empty )
-  | `(list_of_port_declarations[ ( $p:port_declaration,*) ])
+  | `(term|list_of_port_declarations[ (  $p:port_declaration ) ])
     => do
-      let p'<- p.getElems.mapM fun p => `(term| port_declaration[ $p ])
-      `(term| VL.list_of_port_declarations.port_declaration[ [$p',*] ] )
+      let p' ← `(term| port_declaration[ $p ])
+      `(term| VL.list_of_port_declarations.port_declaration $p' []  )
+  | `(term|list_of_port_declarations[ (  $p:port_declaration, $p2, $p3,*) ])
+    => do
+      let p' ← `(term| port_declaration[ $p ])
+      let p2' ← `(term| port_declaration[ $p2 ])
+      let p3' ← p3.getElems.mapM fun p => `(term| port_declaration[ $p ])
+      `(term| VL.list_of_port_declarations.port_declaration  $p' [$p2', $p3',*]  )
 
 macro_rules
   | `(term|port_declaration[ $d:input_declaration ])
     => do
       let d' ← `(term| input_declaration[ $d ])
       `(term| VL.port_declaration.input_declaration $d')
-  | `(term|port_declaration[ $d:output_declaration ])
-    => do
-      let d' ← `(term| output_declaration[ $d ])
-      `(term| VL.port_declaration.output_declaration $d')
+  -- | `(term|port_declaration[ $d:output_declaration ])
+  --   => do
+  --     let d' ← `(term| output_declaration[ $d ])
+  --     `(term| VL.port_declaration.output_declaration $d')
 
 macro_rules
   | `(term|input_declaration[ input $[$t]? $ps ])
@@ -265,11 +271,38 @@ macro_rules
       `(term| VL.input_declaration.mk $t' $ps')
 
 macro_rules
+  | `(term|output_declaration[ output $[$t]? $ps ])
+    => do
+      let t' ← match t with
+        | none => `(term| none)
+        | some t => `(term| some (net_type[ $t ]))
+      let ps' ← `(term| list_of_port_identifiers[ $ps ])
+      `(term| VL.output_declaration.output $t' $ps')
+  | `(term|output_declaration[ output reg $ps ])
+    => do
+      let ps' ← `(term| list_of_port_identifiers[ $ps ])
+      `(term| VL.output_declaration.output_reg $ps')
+
+macro_rules
+  | `(term|list_of_port_identifiers[ $p1:port_identifier])
+    => do
+      let p' ← `(term| port_identifier[ $p1 ])
+      `(term| (VL.list_of_port_identifiers.port_identifier $p' []))
   | `(term|list_of_port_identifiers[ $p1:port_identifier, $p2,* ])
     => do
       let p' ← `(term| port_identifier[ $p1 ])
       let p2' ← p2.getElems.mapM fun p => `(term| port_identifier[ $p ])
-      `(term| VL.list_of_port_identifiers.port_identifier $p' [$p2',*])
+      `(term| (VL.list_of_port_identifiers.port_identifier $p' [$p2',*]))
+
+macro_rules
+  | `(term|net_type[ wire ])
+    => `(term| VL.net_type.wire)
+
+macro_rules
+  | `(term|port_identifier[ $d:identifier ])
+    => do
+      let d' ← `(term| identifier[ $d ])
+      `(term| VL.port_identifier.identifier $d')
 -- macro_rules
 --   | `(identifier[ $d:ident ])
 --     => `( $d )
@@ -323,13 +356,38 @@ set_option trace.Elab.command true
 
 -- list_of_port_declarations[(input p1, input p2, input p3)]
 -- simple_identifier[ D ]
-#reduce source_text[
-  module abc();
-  endmodule
+-- #reduce source_text[
+--   module abc(input a,b,c, input wire b, input wire c);
+--   endmodule
+-- ]
+
+-- set_option trace.Elab.step true in
+#reduce list_of_port_declarations[
+  (input a)
 ]
 
 #reduce input_declaration[
-  input wire a,b,  c
+  input wire a,b,  c,d
+]
+
+#reduce list_of_port_identifiers[
+  a,b,c,d
+]
+
+-- -- set_option trace.Meta.synthInstance true
+
+#reduce list_of_port_declarations[
+  (input wire a,b,c)
+]
+#reduce list_of_port_declarations[
+  (input wire a, input wire f)
+]
+
+#reduce list_of_port_declarations[
+  ()
+]
+#reduce port_declaration[
+  input wire a,b,c
 ]
 
 #reduce identifier[
