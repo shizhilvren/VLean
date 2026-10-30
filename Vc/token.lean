@@ -1,394 +1,406 @@
--- set_option trace.Elab.step true
--- set_option trace.Elab.definition true
--- set_option trace.Elab.command true
+-- -- set_option trace.Elab.step true
+-- -- set_option trace.Elab.definition true
+-- -- set_option trace.Elab.command true
+
 syntax "token" ident   : command
 macro_rules
-  | `(command| token $id:ident) => do
+  | `(command| token $id:ident) => `(declare_syntax_cat $id)
+
+syntax "token_command" ident : command
+macro_rules
+  | `(command| token_command $id:ident) => do
     let keyword := Lean.Syntax.mkStrLit (id.getId.toString ++ "[")
     return Lean.mkNullNode #[
-      ← `(command| declare_syntax_cat $id),
-      ← `(command| syntax $keyword:str $id:ident "]" : command)
+      ← `(syntax $keyword:str $id:ident "]" : command )
     ]
 
-token library_text
-token library_description
-token library_declaration
-token library_incdir
-token include_statement
-token file_path_spec
-token source_text
-token description
-token module_declaration
-token module_keyword
-token module_parameter_port_list
-token list_of_port_declarations
-token port
-token port_implicit
-token port_explicit
-token port_expression
-token port_reference
-token port_declaration
-token module_item
-token module_or_generate_item
-token module_or_generate_item_declaration
-token parameter_override
-token config_declaration
-token design_statement
-token design_statement_item
-token config_rule_statement
-token default_clause
-token inst_clause
-token inst_name
-token cell_clause
-token liblist_clause
-token use_clause
-token local_parameter_declaration
-token parameter_declaration
-token specparam_declaration
-token parameter_type
-token inout_declaration
-token input_declaration
-token output_declaration
-token event_declaration
-token integer_declaration
-token net_declaration
-token real_declaration
-token realtime_declaration
-token reg_declaration
-token time_declaration
-token net_type
-token output_variable_type
-token real_type
-token variable_type
-token drive_strength
-token strength0
-token strength1
-token charge_strength
-token delay3
-token delay2
-token delay_value
-token list_of_defparam_assignments
-token list_of_event_identifiers
-token event_id
-token list_of_net_decl_assignments
-token list_of_net_identifiers
-token net_id
-token list_of_param_assignments
-token list_of_port_identifiers
-token list_of_real_identifiers
-token list_of_specparam_assignments
-token list_of_variable_identifiers
-token list_of_variable_port_identifiers
-token var_port_id
-token defparam_assignment
-token net_decl_assignment
-token param_assignment
-token specparam_assignment
-token pulse_control_specparam
-token error_limit_value
-token reject_limit_value
-token limit_value
-token dimension
-token range_
-token function_declaration
-token function_item_declaration
-token function_port_list
-token func_port_item
-token function_range_or_type
-token task_declaration
-token task_item_declaration
-token task_port_list
-token task_port_item
-token tf_input_declaration
-token tf_output_declaration
-token tf_inout_declaration
-token task_port_type
-token block_item_declaration
-token list_of_block_variable_identifiers
-token list_of_block_real_identifiers
-token block_variable_type
-token block_real_type
-token gate_instantiation
-token cmos_switch_instance
-token enable_gate_instance
-token mos_switch_instance
-token n_input_gate_instance
-token n_output_gate_instance
-token pass_switch_instance
-token pass_enable_switch_instance
-token pull_gate_instance
-token name_of_gate_instance
-token pulldown_strength
-token pullup_strength
-token enable_terminal
-token inout_terminal
-token input_terminal
-token ncontrol_terminal
-token output_terminal
-token pcontrol_terminal
-token cmos_switchtype
-token enable_gatetype
-token mos_switchtype
-token n_input_gatetype
-token n_output_gatetype
-token pass_en_switchtype
-token pass_switchtype
-token module_instantiation
-token parameter_value_assignment
-token list_of_parameter_assignments
-token ordered_parameter_assignment
-token named_parameter_assignment
-token module_instance
-token name_of_module_instance
-token list_of_port_connections
-token ordered_port_connection
-token named_port_connection
-token generate_region
-token genvar_declaration
-token list_of_genvar_identifiers
-token loop_generate_construct
-token genvar_initialization
-token genvar_expression
-token genvar_iteration
-token conditional_generate_construct
-token if_generate_construct
-token case_generate_construct
-token case_generate_item
-token generate_block
-token generate_block_name
-token generate_block_or_null
-token udp_declaration
-token udp_port_list
-token udp_declaration_port_list
-token udp_port_declaration
-token udp_output_declaration
-token udp_input_declaration
-token udp_reg_declaration
-token udp_body
-token combinational_body
-token combinational_entry
-token sequential_body
-token udp_initial_statement
-token init_val
-token sequential_entry
-token seq_input_list
-token level_input_list
-token edge_input_list
-token edge_indicator
-token current_state
-token next_state
-token output_symbol
-token level_symbol
-token edge_symbol
-token udp_instantiation
-token udp_instance
-token name_of_udp_instance
-token continuous_assign
-token list_of_net_assignments
-token net_assignment
-token initial_construct
-token always_construct
-token blocking_assignment
-token nonblocking_assignment
-token procedural_continuous_assignments
-token variable_assignment
-token par_block
-token block_name
-token seq_block
-token statement
-token statement_or_null
-token function_statement
-token delay_control
-token delay_or_event_control
-token disable_statement
-token event_control
-token event_trigger
-token event_expression
-token procedural_timing_control
-token procedural_timing_control_statement
-token wait_statement
-token conditional_statement
-token case_statement
-token case_item
-token loop_statement
-token system_task_enable
-token sys_task_en_port_list
-token sys_task_en_port_item
-token task_enable
-token task_en_port_list
-token specify_block
-token specify_item
-token pulsestyle_declaration
-token showcancelled_declaration
-token path_declaration
-token simple_path_declaration
-token parallel_path_description
-token full_path_description
-token list_of_path_inputs
-token list_of_path_outputs
-token specify_input_terminal_descriptor
-token specify_output_terminal_descriptor
-token input_identifier
-token output_identifier
-token path_delay_value
-token list_of_path_delay_expressions
-token t_path_delay_expression
-token trise_path_delay_expression
-token tfall_path_delay_expression
-token tz_path_delay_expression
-token t01_path_delay_expression
-token t10_path_delay_expression
-token t0z_path_delay_expression
-token tz1_path_delay_expression
-token t1z_path_delay_expression
-token tz0_path_delay_expression
-token t0x_path_delay_expression
-token tx1_path_delay_expression
-token t1x_path_delay_expression
-token tx0_path_delay_expression
-token txz_path_delay_expression
-token tzx_path_delay_expression
-token path_delay_expression
-token edge_sensitive_path_declaration
-token parallel_edge_sensitive_path_description
-token full_edge_sensitive_path_description
-token data_source_expression
-token edge_identifier
-token state_dependent_path_declaration
-token polarity_operator
-token system_timing_check
-token setup_timing_check
-token notifier_opt
-token hold_timing_check
-token setuphold_timing_check
-token timing_check_opt
-token stamptime_cond_opt
-token checktime_cond_opt
-token delayed_ref_opt
-token delayed_data_opt
-token recovery_timing_check
-token removal_timing_check
-token recrem_timing_check
-token skew_timing_check
-token timeskew_timing_check
-token skew_timing_check_opt
-token event_based_flag_opt
-token remain_active_flag_opt
-token fullskew_timing_check
-token period_timing_check
-token width_timing_check
-token threshold_opt
-token nochange_timing_check
-token checktime_condition
-token controlled_reference_event
-token data_event
-token delayed_data
-token delayed_reference
-token end_edge_offset
-token event_based_flag
-token notifier
-token reference_event
-token remain_active_flag
-token stamptime_condition
-token start_edge_offset
-token threshold
-token timing_check_limit
-token timing_check_event
-token controlled_timing_check_event
-token timing_check_event_control
-token specify_terminal_descriptor
-token edge_control_specifier
-token edge_descriptor
-token timing_check_condition
-token scalar_timing_check_condition
-token scalar_constant
-token concatenation
-token constant_concatenation
-token constant_multiple_concatenation
-token module_path_concatenation
-token module_path_multiple_concatenation
-token multiple_concatenation
-token constant_function_call
-token constant_system_function_call
-token function_call
-token system_function_call
-token sys_func_call_port_list
-token base_expression
-token constant_base_expression
-token constant_expression
-token constant_mintypmax_expression
-token constant_range_expression
-token dimension_constant_expression
-token expression
-token lsb_constant_expression
-token mintypmax_expression
-token module_path_expression
-token module_path_mintypmax_expression
-token msb_constant_expression
-token range_expression
-token width_constant_expression
-token constant_primary
-token module_path_primary
-token primary
-token select_
-token bit_select
-token net_lvalue
-token const_select
-token const_bit_select
-token variable_lvalue
-token unary_operator
-token unary_module_path_operator
-token number
-token real_number
-token decimal_number
-token binary_number
-token octal_number
-token hex_number
-token size
-token fixed_point_number
-token exponential_number
-token unsigned_number
-token decimal_value
-token binary_value
-token octal_value
-token hex_value
-token decimal_base
-token binary_base
-token octal_base
-token hex_base
-token string_
-token attribute_instance
-token attr_spec
-token attr_name
-token block_identifier
-token cell_identifier
-token config_identifier
-token escaped_identifier
-token event_identifier
-token function_identifier
-token gate_instance_identifier
-token generate_block_identifier
-token genvar_identifier
-token hierarchical_identifier
-token hier_ref
-token identifier
-token input_port_identifier
-token instance_identifier
-token library_identifier
-token module_identifier
-token module_instance_identifier
-token net_identifier
-token output_port_identifier
-token parameter_identifier
-token port_identifier
-token real_identifier
-token simple_identifier
-token specparam_identifier
-token system_function_identifier
-token system_task_identifier
-token task_identifier
-token terminal_identifier
-token topmodule_identifier
-token udp_identifier
-token udp_instance_identifier
-token variable_identifier
+syntax "token_term" ident : command
+macro_rules
+  | `(command| token_term $id:ident) => do
+    let keyword := Lean.Syntax.mkStrLit (id.getId.toString ++ "[")
+    return Lean.mkNullNode #[
+      ← `(syntax $keyword:str $id:ident "]" : term )
+    ]
+
+-- declare_syntax_cat library_text
+-- declare_syntax_cat library_description
+-- declare_syntax_cat library_declaration
+-- declare_syntax_cat library_incdir
+-- declare_syntax_cat include_statement
+-- declare_syntax_cat file_path_spec
+-- declare_syntax_cat source_text
+-- declare_syntax_cat description
+-- declare_syntax_cat module_declaration
+-- declare_syntax_cat module_keyword
+-- declare_syntax_cat module_parameter_port_list
+-- declare_syntax_cat list_of_port_declarations
+-- declare_syntax_cat port
+-- declare_syntax_cat port_implicit
+-- declare_syntax_cat port_explicit
+-- declare_syntax_cat port_expression
+-- declare_syntax_cat port_reference
+-- declare_syntax_cat port_declaration
+-- declare_syntax_cat module_item
+-- declare_syntax_cat module_or_generate_item
+-- declare_syntax_cat module_or_generate_item_declaration
+-- declare_syntax_cat parameter_override
+-- declare_syntax_cat config_declaration
+-- declare_syntax_cat design_statement
+-- declare_syntax_cat design_statement_item
+-- declare_syntax_cat config_rule_statement
+-- declare_syntax_cat default_clause
+-- declare_syntax_cat inst_clause
+-- declare_syntax_cat inst_name
+-- declare_syntax_cat cell_clause
+-- declare_syntax_cat liblist_clause
+-- declare_syntax_cat use_clause
+-- declare_syntax_cat local_parameter_declaration
+-- declare_syntax_cat parameter_declaration
+-- declare_syntax_cat specparam_declaration
+-- declare_syntax_cat parameter_type
+-- declare_syntax_cat inout_declaration
+-- declare_syntax_cat input_declaration
+-- declare_syntax_cat output_declaration
+-- declare_syntax_cat event_declaration
+-- declare_syntax_cat integer_declaration
+-- declare_syntax_cat net_declaration
+-- declare_syntax_cat real_declaration
+-- declare_syntax_cat realtime_declaration
+-- declare_syntax_cat reg_declaration
+-- declare_syntax_cat time_declaration
+-- declare_syntax_cat net_type
+-- declare_syntax_cat output_variable_type
+-- declare_syntax_cat real_type
+-- declare_syntax_cat variable_type
+-- declare_syntax_cat drive_strength
+-- declare_syntax_cat strength0
+-- declare_syntax_cat strength1
+-- declare_syntax_cat charge_strength
+-- declare_syntax_cat delay3
+-- declare_syntax_cat delay2
+-- declare_syntax_cat delay_value
+-- declare_syntax_cat list_of_defparam_assignments
+-- declare_syntax_cat list_of_event_identifiers
+-- declare_syntax_cat event_id
+-- declare_syntax_cat list_of_net_decl_assignments
+-- declare_syntax_cat list_of_net_identifiers
+-- declare_syntax_cat net_id
+-- declare_syntax_cat list_of_param_assignments
+-- declare_syntax_cat list_of_port_identifiers
+-- declare_syntax_cat list_of_real_identifiers
+-- declare_syntax_cat list_of_specparam_assignments
+-- declare_syntax_cat list_of_variable_identifiers
+-- declare_syntax_cat list_of_variable_port_identifiers
+-- declare_syntax_cat var_port_id
+-- declare_syntax_cat defparam_assignment
+-- declare_syntax_cat net_decl_assignment
+-- declare_syntax_cat param_assignment
+-- declare_syntax_cat specparam_assignment
+-- declare_syntax_cat pulse_control_specparam
+-- declare_syntax_cat error_limit_value
+-- declare_syntax_cat reject_limit_value
+-- declare_syntax_cat limit_value
+-- declare_syntax_cat dimension
+-- declare_syntax_cat range_
+-- declare_syntax_cat function_declaration
+-- declare_syntax_cat function_item_declaration
+-- declare_syntax_cat function_port_list
+-- declare_syntax_cat func_port_item
+-- declare_syntax_cat function_range_or_type
+-- declare_syntax_cat task_declaration
+-- declare_syntax_cat task_item_declaration
+-- declare_syntax_cat task_port_list
+-- declare_syntax_cat task_port_item
+-- declare_syntax_cat tf_input_declaration
+-- declare_syntax_cat tf_output_declaration
+-- declare_syntax_cat tf_inout_declaration
+-- declare_syntax_cat task_port_type
+-- declare_syntax_cat block_item_declaration
+-- declare_syntax_cat list_of_block_variable_identifiers
+-- declare_syntax_cat list_of_block_real_identifiers
+-- declare_syntax_cat block_variable_type
+-- declare_syntax_cat block_real_type
+-- declare_syntax_cat gate_instantiation
+-- declare_syntax_cat cmos_switch_instance
+-- declare_syntax_cat enable_gate_instance
+-- declare_syntax_cat mos_switch_instance
+-- declare_syntax_cat n_input_gate_instance
+-- declare_syntax_cat n_output_gate_instance
+-- declare_syntax_cat pass_switch_instance
+-- declare_syntax_cat pass_enable_switch_instance
+-- declare_syntax_cat pull_gate_instance
+-- declare_syntax_cat name_of_gate_instance
+-- declare_syntax_cat pulldown_strength
+-- declare_syntax_cat pullup_strength
+-- declare_syntax_cat enable_terminal
+-- declare_syntax_cat inout_terminal
+-- declare_syntax_cat input_terminal
+-- declare_syntax_cat ncontrol_terminal
+-- declare_syntax_cat output_terminal
+-- declare_syntax_cat pcontrol_terminal
+-- declare_syntax_cat cmos_switchtype
+-- declare_syntax_cat enable_gatetype
+-- declare_syntax_cat mos_switchtype
+-- declare_syntax_cat n_input_gatetype
+-- declare_syntax_cat n_output_gatetype
+-- declare_syntax_cat pass_en_switchtype
+-- declare_syntax_cat pass_switchtype
+-- declare_syntax_cat module_instantiation
+-- declare_syntax_cat parameter_value_assignment
+-- declare_syntax_cat list_of_parameter_assignments
+-- declare_syntax_cat ordered_parameter_assignment
+-- declare_syntax_cat named_parameter_assignment
+-- declare_syntax_cat module_instance
+-- declare_syntax_cat name_of_module_instance
+-- declare_syntax_cat list_of_port_connections
+-- declare_syntax_cat ordered_port_connection
+-- declare_syntax_cat named_port_connection
+-- declare_syntax_cat generate_region
+-- declare_syntax_cat genvar_declaration
+-- declare_syntax_cat list_of_genvar_identifiers
+-- declare_syntax_cat loop_generate_construct
+-- declare_syntax_cat genvar_initialization
+-- declare_syntax_cat genvar_expression
+-- declare_syntax_cat genvar_iteration
+-- declare_syntax_cat conditional_generate_construct
+-- declare_syntax_cat if_generate_construct
+-- declare_syntax_cat case_generate_construct
+-- declare_syntax_cat case_generate_item
+-- declare_syntax_cat generate_block
+-- declare_syntax_cat generate_block_name
+-- declare_syntax_cat generate_block_or_null
+-- declare_syntax_cat udp_declaration
+-- declare_syntax_cat udp_port_list
+-- declare_syntax_cat udp_declaration_port_list
+-- declare_syntax_cat udp_port_declaration
+-- declare_syntax_cat udp_output_declaration
+-- declare_syntax_cat udp_input_declaration
+-- declare_syntax_cat udp_reg_declaration
+-- declare_syntax_cat udp_body
+-- declare_syntax_cat combinational_body
+-- declare_syntax_cat combinational_entry
+-- declare_syntax_cat sequential_body
+-- declare_syntax_cat udp_initial_statement
+-- declare_syntax_cat init_val
+-- declare_syntax_cat sequential_entry
+-- declare_syntax_cat seq_input_list
+-- declare_syntax_cat level_input_list
+-- declare_syntax_cat edge_input_list
+-- declare_syntax_cat edge_indicator
+-- declare_syntax_cat current_state
+-- declare_syntax_cat next_state
+-- declare_syntax_cat output_symbol
+-- declare_syntax_cat level_symbol
+-- declare_syntax_cat edge_symbol
+-- declare_syntax_cat udp_instantiation
+-- declare_syntax_cat udp_instance
+-- declare_syntax_cat name_of_udp_instance
+-- declare_syntax_cat continuous_assign
+-- declare_syntax_cat list_of_net_assignments
+-- declare_syntax_cat net_assignment
+-- declare_syntax_cat initial_construct
+-- declare_syntax_cat always_construct
+-- declare_syntax_cat blocking_assignment
+-- declare_syntax_cat nonblocking_assignment
+-- declare_syntax_cat procedural_continuous_assignments
+-- declare_syntax_cat variable_assignment
+-- declare_syntax_cat par_block
+-- declare_syntax_cat block_name
+-- declare_syntax_cat seq_block
+-- declare_syntax_cat statement
+-- declare_syntax_cat statement_or_null
+-- declare_syntax_cat function_statement
+-- declare_syntax_cat delay_control
+-- declare_syntax_cat delay_or_event_control
+-- declare_syntax_cat disable_statement
+-- declare_syntax_cat event_control
+-- declare_syntax_cat event_trigger
+-- declare_syntax_cat event_expression
+-- declare_syntax_cat procedural_timing_control
+-- declare_syntax_cat procedural_timing_control_statement
+-- declare_syntax_cat wait_statement
+-- declare_syntax_cat conditional_statement
+-- declare_syntax_cat case_statement
+-- declare_syntax_cat case_item
+-- declare_syntax_cat loop_statement
+-- declare_syntax_cat system_task_enable
+-- declare_syntax_cat sys_task_en_port_list
+-- declare_syntax_cat sys_task_en_port_item
+-- declare_syntax_cat task_enable
+-- declare_syntax_cat task_en_port_list
+-- declare_syntax_cat specify_block
+-- declare_syntax_cat specify_item
+-- declare_syntax_cat pulsestyle_declaration
+-- declare_syntax_cat showcancelled_declaration
+-- declare_syntax_cat path_declaration
+-- declare_syntax_cat simple_path_declaration
+-- declare_syntax_cat parallel_path_description
+-- declare_syntax_cat full_path_description
+-- declare_syntax_cat list_of_path_inputs
+-- declare_syntax_cat list_of_path_outputs
+-- declare_syntax_cat specify_input_terminal_descriptor
+-- declare_syntax_cat specify_output_terminal_descriptor
+-- declare_syntax_cat input_identifier
+-- declare_syntax_cat output_identifier
+-- declare_syntax_cat path_delay_value
+-- declare_syntax_cat list_of_path_delay_expressions
+-- declare_syntax_cat t_path_delay_expression
+-- declare_syntax_cat trise_path_delay_expression
+-- declare_syntax_cat tfall_path_delay_expression
+-- declare_syntax_cat tz_path_delay_expression
+-- declare_syntax_cat t01_path_delay_expression
+-- declare_syntax_cat t10_path_delay_expression
+-- declare_syntax_cat t0z_path_delay_expression
+-- declare_syntax_cat tz1_path_delay_expression
+-- declare_syntax_cat t1z_path_delay_expression
+-- declare_syntax_cat tz0_path_delay_expression
+-- declare_syntax_cat t0x_path_delay_expression
+-- declare_syntax_cat tx1_path_delay_expression
+-- declare_syntax_cat t1x_path_delay_expression
+-- declare_syntax_cat tx0_path_delay_expression
+-- declare_syntax_cat txz_path_delay_expression
+-- declare_syntax_cat tzx_path_delay_expression
+-- declare_syntax_cat path_delay_expression
+-- declare_syntax_cat edge_sensitive_path_declaration
+-- declare_syntax_cat parallel_edge_sensitive_path_description
+-- declare_syntax_cat full_edge_sensitive_path_description
+-- declare_syntax_cat data_source_expression
+-- declare_syntax_cat edge_identifier
+-- declare_syntax_cat state_dependent_path_declaration
+-- declare_syntax_cat polarity_operator
+-- declare_syntax_cat system_timing_check
+-- declare_syntax_cat setup_timing_check
+-- declare_syntax_cat notifier_opt
+-- declare_syntax_cat hold_timing_check
+-- declare_syntax_cat setuphold_timing_check
+-- declare_syntax_cat timing_check_opt
+-- declare_syntax_cat stamptime_cond_opt
+-- declare_syntax_cat checktime_cond_opt
+-- declare_syntax_cat delayed_ref_opt
+-- declare_syntax_cat delayed_data_opt
+-- declare_syntax_cat recovery_timing_check
+-- declare_syntax_cat removal_timing_check
+-- declare_syntax_cat recrem_timing_check
+-- declare_syntax_cat skew_timing_check
+-- declare_syntax_cat timeskew_timing_check
+-- declare_syntax_cat skew_timing_check_opt
+-- declare_syntax_cat event_based_flag_opt
+-- declare_syntax_cat remain_active_flag_opt
+-- declare_syntax_cat fullskew_timing_check
+-- declare_syntax_cat period_timing_check
+-- declare_syntax_cat width_timing_check
+-- declare_syntax_cat threshold_opt
+-- declare_syntax_cat nochange_timing_check
+-- declare_syntax_cat checktime_condition
+-- declare_syntax_cat controlled_reference_event
+-- declare_syntax_cat data_event
+-- declare_syntax_cat delayed_data
+-- declare_syntax_cat delayed_reference
+-- declare_syntax_cat end_edge_offset
+-- declare_syntax_cat event_based_flag
+-- declare_syntax_cat notifier
+-- declare_syntax_cat reference_event
+-- declare_syntax_cat remain_active_flag
+-- declare_syntax_cat stamptime_condition
+-- declare_syntax_cat start_edge_offset
+-- declare_syntax_cat threshold
+-- declare_syntax_cat timing_check_limit
+-- declare_syntax_cat timing_check_event
+-- declare_syntax_cat controlled_timing_check_event
+-- declare_syntax_cat timing_check_event_control
+-- declare_syntax_cat specify_terminal_descriptor
+-- declare_syntax_cat edge_control_specifier
+-- declare_syntax_cat edge_descriptor
+-- declare_syntax_cat timing_check_condition
+-- declare_syntax_cat scalar_timing_check_condition
+-- declare_syntax_cat scalar_constant
+-- declare_syntax_cat concatenation
+-- declare_syntax_cat constant_concatenation
+-- declare_syntax_cat constant_multiple_concatenation
+-- declare_syntax_cat module_path_concatenation
+-- declare_syntax_cat module_path_multiple_concatenation
+-- declare_syntax_cat multiple_concatenation
+-- declare_syntax_cat constant_function_call
+-- declare_syntax_cat constant_system_function_call
+-- declare_syntax_cat function_call
+-- declare_syntax_cat system_function_call
+-- declare_syntax_cat sys_func_call_port_list
+-- declare_syntax_cat base_expression
+-- declare_syntax_cat constant_base_expression
+-- declare_syntax_cat constant_expression
+-- declare_syntax_cat constant_mintypmax_expression
+-- declare_syntax_cat constant_range_expression
+-- declare_syntax_cat dimension_constant_expression
+-- declare_syntax_cat expression
+-- declare_syntax_cat lsb_constant_expression
+-- declare_syntax_cat mintypmax_expression
+-- declare_syntax_cat module_path_expression
+-- declare_syntax_cat module_path_mintypmax_expression
+-- declare_syntax_cat msb_constant_expression
+-- declare_syntax_cat range_expression
+-- declare_syntax_cat width_constant_expression
+-- declare_syntax_cat constant_primary
+-- declare_syntax_cat module_path_primary
+-- declare_syntax_cat primary
+-- declare_syntax_cat select_
+-- declare_syntax_cat bit_select
+-- declare_syntax_cat net_lvalue
+-- declare_syntax_cat const_select
+-- declare_syntax_cat const_bit_select
+-- declare_syntax_cat variable_lvalue
+-- declare_syntax_cat unary_operator
+-- declare_syntax_cat unary_module_path_operator
+-- declare_syntax_cat number
+-- declare_syntax_cat real_number
+-- declare_syntax_cat decimal_number
+-- declare_syntax_cat binary_number
+-- declare_syntax_cat octal_number
+-- declare_syntax_cat hex_number
+-- declare_syntax_cat size
+-- declare_syntax_cat fixed_point_number
+-- declare_syntax_cat exponential_number
+-- declare_syntax_cat unsigned_number
+-- declare_syntax_cat decimal_value
+-- declare_syntax_cat binary_value
+-- declare_syntax_cat octal_value
+-- declare_syntax_cat hex_value
+-- declare_syntax_cat decimal_base
+-- declare_syntax_cat binary_base
+-- declare_syntax_cat octal_base
+-- declare_syntax_cat hex_base
+-- declare_syntax_cat string_
+-- declare_syntax_cat attribute_instance
+-- declare_syntax_cat attr_spec
+-- declare_syntax_cat attr_name
+-- declare_syntax_cat block_identifier
+-- declare_syntax_cat cell_identifier
+-- declare_syntax_cat config_identifier
+-- declare_syntax_cat escaped_identifier
+-- declare_syntax_cat event_identifier
+-- declare_syntax_cat function_identifier
+-- declare_syntax_cat gate_instance_identifier
+-- declare_syntax_cat generate_block_identifier
+-- declare_syntax_cat genvar_identifier
+-- declare_syntax_cat hierarchical_identifier
+-- declare_syntax_cat hier_ref
+-- declare_syntax_cat identifier
+-- declare_syntax_cat input_port_identifier
+-- declare_syntax_cat instance_identifier
+-- declare_syntax_cat library_identifier
+-- declare_syntax_cat module_identifier
+-- declare_syntax_cat module_instance_identifier
+-- declare_syntax_cat net_identifier
+-- declare_syntax_cat output_port_identifier
+-- declare_syntax_cat parameter_identifier
+-- declare_syntax_cat port_identifier
+-- declare_syntax_cat real_identifier
+-- declare_syntax_cat simple_identifier
+-- declare_syntax_cat specparam_identifier
+-- declare_syntax_cat system_function_identifier
+-- declare_syntax_cat system_task_identifier
+-- declare_syntax_cat task_identifier
+-- declare_syntax_cat terminal_identifier
+-- declare_syntax_cat topmodule_identifier
+-- declare_syntax_cat udp_identifier
+-- declare_syntax_cat udp_instance_identifier
+-- declare_syntax_cat variable_identifier
