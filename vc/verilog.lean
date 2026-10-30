@@ -118,7 +118,7 @@ syntax
   ";"
   module_item*
   "endmodule" : module_declaration
-syntax "(" port_declaration,+ ")" : list_of_port_declarations
+syntax "(" port_declaration (atomic("," port_declaration))* ")" : list_of_port_declarations
 syntax "(" ")" : list_of_port_declarations
 syntax ("module" <|> "macromodule"): module_keyword
 syntax input_declaration  : port_declaration
@@ -127,7 +127,7 @@ syntax "input" (net_type)? list_of_port_identifiers : input_declaration
 syntax "output" (net_type)? list_of_port_identifiers : output_declaration
 syntax "output" "reg" list_of_port_identifiers : output_declaration
 syntax "wire" : net_type
-syntax port_identifier,+ : list_of_port_identifiers
+syntax port_identifier (atomic(","  port_identifier ))*  : list_of_port_identifiers
 syntax identifier : port_identifier
 syntax identifier : module_identifier
 syntax ident : identifier
@@ -244,12 +244,11 @@ macro_rules
     => do
       let p' ← `(term| port_declaration[ $p ])
       `(term| VL.list_of_port_declarations.port_declaration $p' []  )
-  | `(term|list_of_port_declarations[ (  $p:port_declaration, $p2, $p3,*) ])
+  | `(term|list_of_port_declarations[ (  $p:port_declaration $[, $p2]*) ])
     => do
       let p' ← `(term| port_declaration[ $p ])
-      let p2' ← `(term| port_declaration[ $p2 ])
-      let p3' ← p3.getElems.mapM fun p => `(term| port_declaration[ $p ])
-      `(term| VL.list_of_port_declarations.port_declaration  $p' [$p2', $p3',*]  )
+      let p2' ← p2.mapM fun p => `(term| port_declaration[ $p ])
+      `(term| VL.list_of_port_declarations.port_declaration  $p' [$p2',*]  )
 
 macro_rules
   | `(term|port_declaration[ $d:input_declaration ])
@@ -283,15 +282,16 @@ macro_rules
       let ps' ← `(term| list_of_port_identifiers[ $ps ])
       `(term| VL.output_declaration.output_reg $ps')
 
+set_option pp.rawOnError true
 macro_rules
   | `(term|list_of_port_identifiers[ $p1:port_identifier])
     => do
       let p' ← `(term| port_identifier[ $p1 ])
       `(term| (VL.list_of_port_identifiers.port_identifier $p' []))
-  | `(term|list_of_port_identifiers[ $p1:port_identifier, $p2,* ])
+  | `(term|list_of_port_identifiers[ $p1:port_identifier $[, $p2]* ])
     => do
       let p' ← `(term| port_identifier[ $p1 ])
-      let p2' ← p2.getElems.mapM fun p => `(term| port_identifier[ $p ])
+      let p2' ← p2.mapM fun p => `(term| port_identifier[ $p ])
       `(term| (VL.list_of_port_identifiers.port_identifier $p' [$p2',*]))
 
 macro_rules
