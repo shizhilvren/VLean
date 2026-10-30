@@ -16,21 +16,25 @@ abbrev Wire := Nat -> Bool
 abbrev Reg := Nat -> Bool
 
 namespace VL
+
 inductive identifier where
   | ident ( name:Lean.Name ): identifier
+
 inductive module_keyword where
   | module : module_keyword
   | macromodule : module_keyword
+
 inductive module_identifier where
   | identifier : identifier -> module_identifier
+
 inductive port_identifier where
-  | identifier (name: Lean.Name) : port_identifier
+  | identifier (id: identifier) : port_identifier
 
 inductive net_type where
   | wire : net_type
 
 inductive list_of_port_identifiers where
-  | port_identifier (id: port_identifier) (List: List port_identifier) : list_of_port_identifiers
+  | port_identifier (id: port_identifier) (ids: List port_identifier) : list_of_port_identifiers
 
 structure input_declaration where
   net_type : Option net_type
@@ -70,43 +74,40 @@ declare_syntax_cat description
 syntax "description[" description "]" : term
 
 declare_syntax_cat module_declaration
-syntax "module_declaration[" module_declaration "]" : command
+syntax "module_declaration[" module_declaration "]" : term
 
 declare_syntax_cat module_keyword
-syntax "module_keyword[" module_keyword "]" : command
+syntax "module_keyword[" module_keyword "]" : term
 
 declare_syntax_cat module_identifier
-syntax "module_identifier[" module_identifier "]" : command
-
-token module_parameter_port_list
-token_command module_parameter_port_list
+syntax "module_identifier[" module_identifier "]" : term
 
 token list_of_port_declarations
-token_command list_of_port_declarations
+token_term list_of_port_declarations
 
 token port_declaration
-token_command port_declaration
+token_term port_declaration
 
 token module_item
 token_command module_item
 
 token input_declaration
-token_command input_declaration
+token_term input_declaration
 
 token output_declaration
-token_command output_declaration
+token_term output_declaration
 
 token net_type
-token_command net_type
+token_term net_type
 
 token list_of_port_identifiers
-token_command list_of_port_identifiers
+token_term list_of_port_identifiers
 
 token port_identifier
-token_command port_identifier
+token_term port_identifier
 
 token identifier
-token_command identifier
+token_term identifier
 
 
 syntax description* : source_text
@@ -114,7 +115,6 @@ syntax module_declaration : description
 syntax
   module_keyword
   module_identifier
-  (module_parameter_port_list)?
   (list_of_port_declarations)?
   ";"
   module_item*
@@ -133,7 +133,6 @@ syntax ident : identifier
 
 syntax ident : input_declaration
 syntax ident : output_declaration
-syntax ident : module_parameter_port_list
 syntax ident : module_item
 -- syntax "module_identifier[" identifier "]": module_identifier
 -- syntax "identifier[" simple_identifier "]" : identifier
@@ -172,11 +171,6 @@ syntax ident : module_item
 --   | `(module_parameter_port_list[ $_:ident ])
 --     => `( Lean.mkNullNode #[])
 
--- macro_rules
---   | `(list_of_port_declarations[  ($p) ])
---     => `( port_declaration[ $p ] )
---   | `(list_of_port_declarations[ ( $p:port_declaration, $[$p2:port_declaration],*) ])
---     => `( port_declaration[ $p ] list_of_port_declarations[ ($p2,*) ])
 
 -- macro_rules
 --   | `(module_declaration[
@@ -206,18 +200,76 @@ macro_rules
       let items ← ds.mapM fun description => `(term| description[ $description ])
       `(term| VL.source_text.description [$items,*])
 
+macro_rules
+  | `(description[ $d:module_declaration ])
+    =>do
+      let item ← `(term| module_declaration[ $d ])
+      `(term| VL.description.module_declaration $item)
 
 macro_rules
-  | `(description[ $_:module_declaration ])
-    =>do
-      let ans ← `(term|
-          VL.description.module_declaration (VL.module_declaration.mk
-          VL.module_keyword.module
-          (VL.module_identifier.identifier (VL.identifier.ident (Lean.Name.mkSimple "m1")))
-          none)
-        )
-      return ans
+  | `(term|module_keyword[ module ])
+    => `(term| VL.module_keyword.module)
+  | `(term|module_keyword[ macromodule ])
+    => `(term| VL.module_keyword.macromodule)
 
+macro_rules
+  | `(term|module_identifier[ $d:identifier ])
+    => do
+      let d' ← `(term| identifier[ $d ])
+      `(term| VL.module_identifier.identifier $d')
+
+macro_rules
+  | `(term|identifier[ $d:ident ])
+    => do
+      let name := Lean.Syntax.mkStrLit d.getId.toString
+      `(term| VL.identifier.ident (Lean.Name.mkSimple $name))
+
+macro_rules
+  | `(term|module_declaration[
+    $d:module_keyword
+    $i:module_identifier
+    $[$l:list_of_port_declarations]?
+    ;
+    -- $[$items:module_item]*
+    endmodule ])
+    => do
+      let d' ← `(term| module_keyword[ $d ])
+      let i' ← `(term| module_identifier[ $i ])
+      `(term| VL.module_declaration.mk $d' $i' none)
+
+macro_rules
+  | `(list_of_port_declarations[ () ])
+    => `( term| VL.list_of_port_declarations.empty )
+  | `(list_of_port_declarations[ ( $p:port_declaration,*) ])
+    => do
+      let p'<- p.getElems.mapM fun p => `(term| port_declaration[ $p ])
+      `(term| VL.list_of_port_declarations.port_declaration[ [$p',*] ] )
+
+macro_rules
+  | `(term|port_declaration[ $d:input_declaration ])
+    => do
+      let d' ← `(term| input_declaration[ $d ])
+      `(term| VL.port_declaration.input_declaration $d')
+  | `(term|port_declaration[ $d:output_declaration ])
+    => do
+      let d' ← `(term| output_declaration[ $d ])
+      `(term| VL.port_declaration.output_declaration $d')
+
+macro_rules
+  | `(term|input_declaration[ input $[$t]? $ps ])
+    => do
+      let t' ← match t with
+        | none => `(term| none)
+        | some t => `(term| some (net_type[ $t ]))
+      let ps' ← `(term| list_of_port_identifiers[ $ps ])
+      `(term| VL.input_declaration.mk $t' $ps')
+
+macro_rules
+  | `(term|list_of_port_identifiers[ $p1:port_identifier, $p2,* ])
+    => do
+      let p' ← `(term| port_identifier[ $p1 ])
+      let p2' ← p2.getElems.mapM fun p => `(term| port_identifier[ $p ])
+      `(term| VL.list_of_port_identifiers.port_identifier $p' [$p2',*])
 -- macro_rules
 --   | `(identifier[ $d:ident ])
 --     => `( $d )
@@ -272,6 +324,18 @@ set_option trace.Elab.command true
 -- list_of_port_declarations[(input p1, input p2, input p3)]
 -- simple_identifier[ D ]
 #reduce source_text[
-  module name_d;
+  module abc();
   endmodule
 ]
+
+#reduce input_declaration[
+  input wire a,b,  c
+]
+
+#reduce identifier[
+  name_d
+]
+def a := identifier[
+  name_d
+]
+#print a
