@@ -1,0 +1,43 @@
+import vc.token
+
+token source_text
+token_term source_text
+
+token description
+token_term description
+
+token module_declaration
+token_term module_declaration
+
+token module_keyword
+token_term module_keyword
+
+token module_identifier
+token_term module_identifier
+
+token list_of_port_declarations
+token_term list_of_port_declarations
+
+token port_declaration
+token_term port_declaration
+
+token module_item
+token_command module_item
+
+token input_declaration
+token_term input_declaration
+
+token output_declaration
+token_term output_declaration
+
+token net_type
+token_term net_type
+
+token list_of_port_identifiers
+token_term list_of_port_identifiers
+
+token port_identifier
+token_term port_identifier
+
+token identifier
+token_term identifier
