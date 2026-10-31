@@ -137,6 +137,7 @@ elab ">>" p:imp_program "<<" : term => do
   let reduced ← Meta.reduce expr
   return reduced
 
+
 def  a := >>
 a := 5;;
 if not a and 3 < 4 then
@@ -242,9 +243,12 @@ elab "imp_codegen% " program:term : term => do
 end IMP
 
 syntax "imp_to_lean " term:arg : term
+syntax "imp_to_lean " ident " := " term:arg : command
 
 macro_rules
   | `(imp_to_lean $program:term) => `(imp_codegen% $program)
+  | `(command| imp_to_lean $id:ident := $program:term) =>
+    `(command| def $id := imp_codegen% $program)
 
 def countToThree : IMPProgram := >>
   x := 0;;
@@ -258,8 +262,7 @@ def countToThree : IMPProgram := >>
   fi
 <<
 
-def countToThreeLean : IO Unit :=
-  imp_to_lean countToThree
+imp_to_lean countToThreeLean := countToThree
 
 #print countToThreeLean
 
@@ -271,6 +274,14 @@ example : IO Unit := imp_to_lean (>> if false then x := 1 else x := 2 fi <<)
 def a2 := imp_to_lean (>> x := 1 + 2 <<)
 #print a2
 
+imp_to_lean abc := (>> if false then x := 1 else x := 2 fi <<)
+
+#check abc
+#print abc
+
+def a3 :Nat:= by
+  let p := abc
+  exact 2
 -- IMPProgram.Seq (IMPProgram.Assign "a" (IMPExpr.lit (IMPLit.nat 5)))
 --   (IMPProgram.Seq
 --     (IMPProgram.If

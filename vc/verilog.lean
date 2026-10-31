@@ -1,7 +1,12 @@
+import Lean
 import vc.paser.syntax_tree
 import vc.paser.token
 import vc.paser.rules
-import Lean
+
+elab "verilog[" code:source_text "]" : term => do
+  let stx ← `(term| source_text[ $code:source_text ])
+  let expr ← Lean.Elab.Term.elabTermEnsuringType stx (Lean.mkConst ``VL.source_text)
+  Lean.Meta.reduce expr
 
 -- set_option pp.all true in
 -- set_option trace.Elab.step true in
@@ -53,10 +58,16 @@ set_option trace.Elab.command true
   endmodule
 ]
 
-#reduce source_text[
-  module abc;
-  endmodule
-]
+def a1 (v: VL.source_text) : Nat :=
+  1
+
+def a :Nat:= by
+  let b := a1 (verilog[
+    module abc(input wire a,b, output reg c,d, output wire f, e);
+    endmodule
+  ])
+
+  exact 2
 
 #reduce list_of_port_declarations[
   ()
