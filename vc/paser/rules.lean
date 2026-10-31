@@ -38,7 +38,7 @@ macro_rules
     $i:module_identifier
     $[$l:list_of_port_declarations]?
     ;
-    -- $[$items:module_item]*
+    $[$items:module_item]*
     endmodule ])
     => do
       let d' ← `(term| module_keyword[ $d ])
@@ -46,7 +46,8 @@ macro_rules
       let l' ← match l with
         | none => `(term| none)
         | some l => `(term| some (list_of_port_declarations[ $l ]))
-      `(term| VL.module_declaration.mk $d' $i' $l')
+      let items' ← items.mapM fun item => `(term| module_item[ $item ])
+      `(term| VL.module_declaration.mk $d' $i' $l' [$items',*])
 
 macro_rules
   | `(term|list_of_port_declarations[ () ])
@@ -93,7 +94,6 @@ macro_rules
       let ps' ← `(term| list_of_port_identifiers[ $ps ])
       `(term| VL.output_declaration.output_reg $ps')
 
-set_option pp.rawOnError true
 macro_rules
   | `(term|list_of_port_identifiers[ $p1:port_identifier])
     => do
@@ -114,29 +114,91 @@ macro_rules
     => do
       let d' ← `(term| identifier[ $d ])
       `(term| VL.port_identifier.identifier $d')
--- macro_rules
---   | `(identifier[ $d:ident ])
---     => `( $d )
-
--- macro_rules
---   | `(module_keyword[ module ])
---     => `(term|def)
---   | `(module_keyword[ macromodule ])
---     => `(#[])
-
--- macro_rules
---   | `(module_identifier[ $d:identifier ])
---     => `( def identifier[ $d ])
-
--- macro_rules
---   | `(module_item[ $d:ident ])
---     => `( def $d := "module_item" )
-
-
-
-
-
 
 macro_rules
-  | `(module_item[ $d:ident ])
-    => `( def $d := "module_item" )
+  | `(term|module_item[ $d:module_or_generate_item ])
+    => do
+      let d' ← `(term| module_or_generate_item[ $d ])
+      `(term| VL.module_item.module_or_generate_item $d')
+
+macro_rules
+  | `(term|module_or_generate_item[ $d:always_construct ])
+    => do
+      let d' ← `(term| always_construct[ $d ])
+      `(term| VL.module_or_generate_item.always_construct $d')
+
+macro_rules
+  | `(term|always_construct[ always $s:statement ])
+    => do
+      let s' ← `(term| statement[ $s ])
+      `(term| VL.always_construct.always $s')
+
+macro_rules
+  | `(term|statement[ $d:procedural_timing_control_statement ])
+    => do
+      let d' ← `(term| procedural_timing_control_statement[ $d ])
+      `(term| VL.statement.procedural_timing_control_statement $d')
+  | `(term|statement[ $d:seq_block ])
+    => do
+      let d' ← `(term| seq_block[ $d ])
+      `(term| VL.statement.seq_block $d')
+  | `(term|statement[ $d:nonblocking_assignment ; ])
+    => do
+      let d' ← `(term| nonblocking_assignment[ $d ])
+      `(term| VL.statement.nonblocking_assignment $d')
+
+macro_rules
+  | `(term|procedural_timing_control_statement[ $d:procedural_timing_control $s:statement_or_null ])
+    => do
+      let d' ← `(term| procedural_timing_control[ $d ])
+      let s' ← `(term| statement_or_null[ $s ])
+      `(term| VL.procedural_timing_control_statement.mk $d' $s')
+
+macro_rules
+  | `(term|procedural_timing_control[ $d:event_control ])
+    => do
+      let d' ← `(term| event_control[ $d ])
+      `(term| VL.procedural_timing_control.event_control $d')
+
+macro_rules
+  | `(term|event_control[ @ ( $d:event_expression ) ])
+    => do
+      let d' ← `(term| event_expression[ $d ])
+      `(term| VL.event_control.event_expression $d')
+
+macro_rules
+  | `(term|event_expression[ posedge $d:expression ])
+    => do
+      let d' ← `(term| expression[ $d ])
+      `(term| VL.event_expression.posedge $d')
+
+macro_rules
+  | `(term|statement_or_null[ $s:statement ])
+    => do
+      let s' ← `(term| statement[ $s ])
+      `(term| VL.statement_or_null.statement $s')
+
+macro_rules
+  | `(term|seq_block[ begin $[$stmts:statement]* end ])
+    => do
+      let stmts' ← stmts.mapM fun stmt => `(term| statement[ $stmt ])
+      `(term| VL.seq_block.statements [$stmts',*])
+
+macro_rules
+  | `(term|nonblocking_assignment[ $l:variable_lvalue <= $e:expression ])
+    => do
+      let l' ← `(term| variable_lvalue[ $l ])
+      let e' ← `(term| expression[ $e ])
+      `(term| VL.nonblocking_assignment.mk $l' $e')
+
+macro_rules
+  | `(term|variable_lvalue[ $d:identifier ])
+    => do
+      let d' ← `(term| identifier[ $d ])
+      `(term| VL.variable_lvalue.identifier $d')
+
+macro_rules
+  | `(term|expression[ $d:identifier ])
+    => do
+      let d' ← `(term| identifier[ $d ])
+      `(term| VL.expression.identifier $d')

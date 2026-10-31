@@ -22,7 +22,7 @@ token port_declaration
 token_term port_declaration
 
 token module_item
-token_command module_item
+token_term module_item
 
 token input_declaration
 token_term input_declaration
@@ -41,3 +41,39 @@ token_term port_identifier
 
 token identifier
 token_term identifier
+
+token module_or_generate_item
+token_term module_or_generate_item
+
+token always_construct
+token_term always_construct
+
+token statement
+token_term statement
+
+token procedural_timing_control_statement
+token_term procedural_timing_control_statement
+
+token procedural_timing_control
+token_term procedural_timing_control
+
+token event_control
+token_term event_control
+
+token event_expression
+token_term event_expression
+
+token statement_or_null
+token_term statement_or_null
+
+token seq_block
+token_term seq_block
+
+token nonblocking_assignment
+token_term nonblocking_assignment
+
+token variable_lvalue
+token_term variable_lvalue
+
+token expression
+token_term expression

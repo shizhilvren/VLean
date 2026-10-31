@@ -53,11 +53,34 @@ set_option trace.Elab.command true
   endmodule
 ]
 
+#reduce source_text[
+  module abc;
+  endmodule
+]
+
 #reduce list_of_port_declarations[
   ()
 ]
 #reduce port_declaration[
   input wire a,b,c
+]
+
+#reduce always_construct[
+    always @(posedge clk) begin
+        out <= in_;
+    end
+]
+
+#reduce source_text[
+  module abc(input wire a,b, output reg c,d, output wire f, e);
+  always @(posedge clk) begin
+        out <= in_;
+    end
+  endmodule
+]
+
+#reduce statement[
+    out <= in_;
 ]
 
 #reduce identifier[
