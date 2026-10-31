@@ -32,5 +32,6 @@ Run the waveform, precedence, diagnostic, and proof checks from this directory:
 
 ```console
 lake env lean Vc/Basic.lean
+lake env lean tests/file_verilog.lean
 lake build
 ```

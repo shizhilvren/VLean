@@ -1,4 +1,22 @@
-import vc.token
+syntax "token" ident : command
+macro_rules
+  | `(command| token $id:ident) => `(declare_syntax_cat $id)
+
+syntax "token_command" ident : command
+macro_rules
+  | `(command| token_command $id:ident) => do
+    let keyword := Lean.Syntax.mkStrLit (id.getId.toString ++ "[")
+    return Lean.mkNullNode #[
+      ← `(syntax $keyword:str $id:ident "]" : command )
+    ]
+
+syntax "token_term" ident : command
+macro_rules
+  | `(command| token_term $id:ident) => do
+    let keyword := Lean.Syntax.mkStrLit (id.getId.toString ++ "[")
+    return Lean.mkNullNode #[
+      ← `(syntax $keyword:str $id:ident "]" : term )
+    ]
 
 token source_text
 token_term source_text
