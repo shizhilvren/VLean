@@ -92,4 +92,9 @@ inductive source_text where
   | description (ds: List description): source_text
 
 end
+def identifier.getName (id: identifier) : Lean.Name :=
+  match id with
+  | identifier.ident n => n
+
+
 end VL
