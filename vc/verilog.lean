@@ -3,16 +3,55 @@ import vc.paser.syntax_tree
 import vc.paser.token
 import vc.paser.rules
 
-elab "verilog[" code:source_text "]" : term => do
-  let stx ← `(term| source_text[ $code:source_text ])
-  let expr ← Lean.Elab.Term.elabTermEnsuringType stx (Lean.mkConst ``VL.source_text)
-  Lean.Meta.reduce expr
 
--- set_option pp.all true in
--- set_option trace.Elab.step true in
--- set_option trace.Elab.definition true in
--- set_option trace.Elab.command true in
--- set_option pp.all true in
+def code_gen (_source : VL.source_text) : Lean.Elab.Command.CommandElabM Unit := do
+  let nameA := Lean.mkIdent `a
+  let nameB := Lean.mkIdent `b
+  let codeA ← `(command| def $nameA:ident (value : Nat) : Nat := value + 1)
+  let codeB ← `(command| def $nameB:ident (value : Nat) : Nat := value + 2)
+  Lean.Elab.Command.elabCommand codeA
+  Lean.Elab.Command.elabCommand codeB
+
+syntax (name := verilogCommand) "verilog[" source_text "]" : command
+
+@[command_elab verilogCommand]
+unsafe def elabVerilog : Lean.Elab.Command.CommandElab := fun stx => do
+  match stx with
+  | `(command| verilog[ $code:source_text ]) =>
+    let source ← Lean.Elab.Command.liftTermElabM do
+      let term ← `(term| source_text[ $code:source_text ])
+      let expr ← Lean.Elab.Term.elabTermEnsuringType term (Lean.mkConst ``VL.source_text)
+      let expr ← Lean.instantiateMVars expr
+      if expr.hasMVar || expr.hasFVar || expr.hasLooseBVars then
+        throwError "expected a closed VL.source_text"
+      Lean.Meta.evalExpr VL.source_text (Lean.mkConst ``VL.source_text) expr
+    code_gen source
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+namespace generatedFunctions
+
+verilog[
+  module generated_example(input wire x);
+  endmodule
+]
+
+#check a
+#print b
+
+end generatedFunctions
+
+run_cmd do
+  let env ← Lean.getEnv
+  for (name, _) in env.constants.toList do
+    if (`generatedFunctions).isPrefixOf name then
+      Lean.logInfo m!"{name}"
+#print generatedFunctions.b
+
+example : generatedFunctions.a 3 = 4 := rfl
+example : generatedFunctions.b 3 = 5 := rfl
+
+
+
 
 abbrev Wire := Nat -> Bool
 abbrev Reg := Nat -> Bool
@@ -62,10 +101,7 @@ def a1 (v: VL.source_text) : Nat :=
   1
 
 def a :Nat:= by
-  let b := a1 (verilog[
-    module abc(input wire a,b, output reg c,d, output wire f, e);
-    endmodule
-  ])
+  let b := generatedFunctions.a
 
   exact 2
 
@@ -97,7 +133,7 @@ def a :Nat:= by
 #reduce identifier[
   name_d
 ]
-def a := identifier[
+def e := identifier[
   name_d
 ]
-#print a
+#print e

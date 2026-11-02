@@ -152,62 +152,48 @@ b := 10
 
 namespace IMP
 
-private def variableName (expr : Expr) : Elab.Term.TermElabM String :=
+private def exprToLean (expr : IMPExpr) : Elab.Term.TermElabM (TSyntax `term) := do
   match expr with
-  | .lit (.strVal name) => return name
-  | _ => throwError "expected a literal IMP variable name"
-
-private partial def exprToLean (expr : Expr) : Elab.Term.TermElabM (TSyntax `term) := do
-  match expr.getAppFn.constName?, expr.getAppArgs with
-  | some ``IMPExpr.lit, #[value] =>
-    match value.getAppFn.constName?, value.getAppArgs with
-    | some ``IMPLit.nat, #[.lit (.natVal value)] =>
-      return Syntax.mkNumLit (toString value)
-    | some ``IMPLit.bool, #[value] =>
-      match value.constName? with
-      | some ``Bool.true => `(Bool.true)
-      | some ``Bool.false => `(Bool.false)
-      | _ => throwError "expected a literal IMP boolean"
-    | _, _ => throwError "expected an IMP literal"
-  | some ``IMPExpr.var, #[name] =>
-    return mkIdent (Name.mkSimple (← variableName name))
-  | some ``IMPExpr.un, #[op, value] =>
+  | .lit (.nat value) => return Syntax.mkNumLit (toString value)
+  | .lit (.bool Bool.true) => `(Bool.true)
+  | .lit (.bool Bool.false) => `(Bool.false)
+  | .var name => return mkIdent (Name.mkSimple name)
+  | .un .not value =>
     let value ← exprToLean value
-    match op.constName? with
-    | some ``IMPUnOp.not => `(!$value)
-    | _ => throwError "unsupported IMP unary operator"
-  | some ``IMPExpr.bin, #[op, left, right] =>
+    `(!$value)
+  | .bin op left right =>
     let left ← exprToLean left
     let right ← exprToLean right
-    match op.constName? with
-    | some ``IMPBinOp.add => `($left + $right)
-    | some ``IMPBinOp.less => `(decide ($left < $right))
-    | some ``IMPBinOp.and => `($left && $right)
-    | _ => throwError "unsupported IMP binary operator"
-  | _, _ => throwError "expected a closed IMP expression"
+    match op with
+    | .add => `($left + $right)
+    | .less => `(decide ($left < $right))
+    | .and => `($left && $right)
 
-private partial def assignedVariables (program : Expr) : Elab.Term.TermElabM (Array String) := do
-  match program.getAppFn.constName?, program.getAppArgs with
-  | some ``IMPProgram.Skip, #[] => return #[]
-  | some ``IMPProgram.Assign, #[name, _] => return #[← variableName name]
-  | some ``IMPProgram.Seq, #[first, second] =>
-    return (← assignedVariables first) ++ (← assignedVariables second)
-  | some ``IMPProgram.If, #[_, onTrue, onFalse] =>
-    return (← assignedVariables onTrue) ++ (← assignedVariables onFalse)
-  | some ``IMPProgram.While, #[_, body] => assignedVariables body
-  | _, _ => throwError "expected a closed IMPProgram"
+unsafe def programFromExpr (program : Expr) : Elab.Term.TermElabM IMPProgram := do
+  let program ← instantiateMVars program
+  if program.hasMVar || program.hasFVar || program.hasLooseBVars then
+    throwError "expected a closed IMPProgram"
+  Meta.evalExpr IMPProgram (mkConst ``IMPProgram) program
 
-private partial def programToLean (program : Expr) :
+def assignedVariables (program : IMPProgram) : Array String :=
+  match program with
+  | .Skip => #[]
+  | .Assign name _ => #[name]
+  | .Seq first second => assignedVariables first ++ assignedVariables second
+  | .If _ onTrue onFalse => assignedVariables onTrue ++ assignedVariables onFalse
+  | .While _ body => assignedVariables body
+
+private def programToLean (program : IMPProgram) :
     Elab.Term.TermElabM (Array (TSyntax `doElem)) := do
-  match program.getAppFn.constName?, program.getAppArgs with
-  | some ``IMPProgram.Skip, #[] => return #[← `(doElem| pure ())]
-  | some ``IMPProgram.Assign, #[name, value] =>
-    let name := mkIdent (Name.mkSimple (← variableName name))
+  match program with
+  | .Skip => return #[← `(doElem| pure ())]
+  | .Assign name value =>
+    let name := mkIdent (Name.mkSimple name)
     let value ← exprToLean value
     return #[← `(doElem| $name:ident := $value)]
-  | some ``IMPProgram.Seq, #[first, second] =>
+  | .Seq first second =>
     return (← programToLean first) ++ (← programToLean second)
-  | some ``IMPProgram.If, #[condition, onTrue, onFalse] =>
+  | .If condition onTrue onFalse =>
     let condition ← exprToLean condition
     let onTrue ← programToLean onTrue
     let onFalse ← programToLean onFalse
@@ -215,17 +201,15 @@ private partial def programToLean (program : Expr) :
       $[$onTrue:doElem]*
     else
       $[$onFalse:doElem]*)]
-  | some ``IMPProgram.While, #[condition, body] =>
+  | .While condition body =>
     let condition ← exprToLean condition
     let body ← programToLean body
     return #[← `(doElem| while $condition do
       $[$body:doElem]*)]
-  | _, _ => throwError "expected a closed IMPProgram"
 
-elab "imp_codegen% " program:term : term => do
-  let program ← Elab.Term.elabTermEnsuringType program (mkConst ``IMPProgram)
-  let program ← Meta.reduce (← instantiateMVars program)
-  let names ← assignedVariables program
+unsafe def codegen (program : Expr) : Elab.Term.TermElabM Expr := do
+  let impProgram ← programFromExpr program
+  let names := assignedVariables impProgram
   let mut seen : Array String := #[]
   let mut declarations : Array (TSyntax `doElem) := #[]
   for name in names do
@@ -233,12 +217,23 @@ elab "imp_codegen% " program:term : term => do
       seen := seen.push name
       let ident := mkIdent (Name.mkSimple name)
       declarations := declarations.push (← `(doElem| let mut $ident:ident := default))
-  let body ← programToLean program
+  let body ← programToLean impProgram
   let code ← `(term| (do
     $[$declarations:doElem]*
     $[$body:doElem]*
     pure () : IO Unit))
   Elab.Term.elabTerm code (some (← Elab.Term.elabType (← `(IO Unit))))
+
+syntax (name := impCodegen) "imp_codegen% " term : term
+
+@[term_elab impCodegen]
+unsafe def elabImpCodegen : Elab.Term.TermElab := fun stx _ => do
+  match stx with
+  | `(imp_codegen% $program:term) =>
+    let program ← Elab.Term.elabTermEnsuringType program (mkConst ``IMPProgram)
+    let program ← Meta.reduce (← instantiateMVars program)
+    codegen program
+  | _ => throwUnsupportedSyntax
 
 end IMP
 
@@ -261,6 +256,10 @@ def countToThree : IMPProgram := >>
     done := false
   fi
 <<
+
+example : IMP.assignedVariables countToThree = #["x", "x", "done", "done"] := rfl
+example : IMP.assignedVariables (>> skip <<) = #[] := rfl
+example : IMP.assignedVariables (>> while false do skip od <<) = #[] := rfl
 
 imp_to_lean countToThreeLean := countToThree
 
