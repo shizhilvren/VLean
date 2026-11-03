@@ -10,7 +10,7 @@ abbrev Reg := Nat → Bool
 -- set_option trace.Elab.definition true
 -- set_option trace.Elab.command true
 
-def oneVer (pd : VL.port_declaration) : List Lean.Name :=
+def oneInput (pd : VL.port_declaration) : List Lean.Name :=
   match pd with
   | .input_declaration declaration =>
     match declaration.list_of_port_identifiers with
@@ -19,10 +19,36 @@ def oneVer (pd : VL.port_declaration) : List Lean.Name :=
         match port with
         | .identifier id => id.getName
   | .output_declaration _ => []
+def oneOutput (pd : VL.port_declaration) : List (Lean.Name × Lean.Name) :=
+  match pd with
+  | .output_declaration declaration =>
+    let (ports, typeName) := match declaration with
+      | .output _ ports => (ports, ``Wire)
+      | .output_reg ports => (ports, ``Reg)
+    match ports with
+    | .port_identifier first rest =>
+      (first :: rest).map fun port =>
+        match port with
+        | .identifier id => (id.getName, typeName)
+  | .input_declaration _ => []
+
+def outputPorts (ports : Option VL.list_of_port_declarations) :
+    List (Lean.Name × Lean.Name) :=
+  match ports with
+  | some (.port_declaration first rest) => (first :: rest).flatMap oneOutput
+  | _ => []
+
+example : outputPorts (some (list_of_port_declarations[
+    (input wire x, output reg a,b, output wire c,d, output e)
+  ])) = [(`a, ``Reg), (`b, ``Reg), (`c, ``Wire), (`d, ``Wire), (`e, ``Wire)] := rfl
+
+example : outputPorts (some (list_of_port_declarations[()])) = [] := rfl
+example : outputPorts none = [] := rfl
+example : outputPorts (some (list_of_port_declarations[(input wire x)])) = [] := rfl
 
 def inputPortNames (ports : Option VL.list_of_port_declarations) : List Lean.Name :=
   match ports with
-  | some (.port_declaration first rest) => (first :: rest).flatMap oneVer
+  | some (.port_declaration first rest) => (first :: rest).flatMap oneInput
   | _ => []
 
 example : inputPortNames (some (list_of_port_declarations[
@@ -40,12 +66,33 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
   let codeA := Lean.mkIdent name
 
   let input_ver := inputPortNames module_declaration.list_of_port_declarations
+  let output_ver := outputPorts module_declaration.list_of_port_declarations
   let inputs ← input_ver.toArray.mapM fun portName => do
     let port := Lean.mkIdent portName
     `(bracketedBinder| ($port:ident : Wire))
 
-  let codeB ← `(term| 0)
-  let code ← `(command| def $codeA:ident $[$inputs:bracketedBinder]* : Nat := $codeB)
+  let rec outputsToLean (ports : List (Lean.Name × Lean.Name)) :
+      Lean.Elab.Command.CommandElabM (Lean.TSyntax `term × Lean.TSyntax `term) := do
+    match ports with
+    | [] => return (← `(term| Unit), ← `(term| ()))
+    | (name, typeName) :: rest =>
+      let portName := Lean.mkIdent name
+      let portType : Lean.TSyntax `term := Lean.mkIdent typeName
+      let value : Lean.TSyntax `term := portName
+      match rest with
+      | [] => return (portType, value)
+      | _ :: _ =>
+        let (restType, restValue) ← outputsToLean rest
+        return (← `(term| $portType × $restType), ← `(term| ($value, $restValue)))
+
+  let (outputs, codeB) ← outputsToLean output_ver
+  let mut codeB := codeB
+  for (name, typeName) in output_ver.reverse do
+    let portName := Lean.mkIdent name
+    let portType : Lean.TSyntax `term := Lean.mkIdent typeName
+    codeB ← `(term| let $portName:ident : $portType := fun _ => Bool.false
+                   $codeB)
+  let code ← `(command| def $codeA:ident $[$inputs:bracketedBinder]* : $outputs := $codeB)
   Lean.Elab.Command.elabCommand code
 
 
@@ -86,7 +133,7 @@ unsafe def elabVerilog : Lean.Elab.Command.CommandElab := fun stx => do
 -- set_option pp.all true in
 -- set_option trace.Elab.step true
 -- set_option trace.Elab.definition true
--- set_option trace.Elab.command true
+set_option trace.Elab.command true
 namespace portParameterTests
 
 verilog[
@@ -94,12 +141,19 @@ verilog[
   endmodule
   module multiple_inputs(input wire x,y, output wire result, input wire z);
   endmodule
+  module multiple_outputs(input wire x, output reg a,b, output wire c);
+  endmodule
 ]
 
-example : Nat := no_inputs
-example : multiple_inputs = fun (_: Wire)  (_: Nat->Bool) (_: Wire) => 0 := by rfl
+example : Unit := no_inputs
+example : multiple_inputs = fun (_: Wire) (_: Nat->Bool) (_: Wire) =>
+    (fun _ => Bool.false : Wire) := rfl
 example : multiple_inputs (fun _ => Bool.false) (fun _ => Bool.true)
-    (fun _ => Bool.false) = 0 := rfl
+    (fun _ => Bool.false) 0 = Bool.false := rfl
+example : Wire → Reg × Reg × Wire := multiple_outputs
+example : (multiple_outputs (fun _ => Bool.true)).1 0 = Bool.false := rfl
+example : (multiple_outputs (fun _ => Bool.true)).2.1 0 = Bool.false := rfl
+example : (multiple_outputs (fun _ => Bool.true)).2.2 0 = Bool.false := rfl
 
 
 
@@ -117,25 +171,15 @@ verilog[
 
 
 
-example : (Nat → Bool) → Nat := generated_example
+example : (Nat → Bool) → Unit := generated_example
 
 end generatedFunctions
 
 run_cmd do
   let env ← Lean.getEnv
-  for (name, a) in env.constants.toList do
+  for (name, _) in env.constants.toList do
     if (`generatedFunctions).isPrefixOf name then
       Lean.logInfo m!"{name}"
-#print generatedFunctions.a
-
-example : generatedFunctions.a 3 = 4 := rfl
-example : generatedFunctions.b 3 = 5 := rfl
-
-
-
-
-abbrev Wire := Nat -> Bool
-abbrev Reg := Nat -> Bool
 
 set_option pp.rawOnError true
 set_option trace.Elab.step true
@@ -178,13 +222,6 @@ set_option trace.Elab.command true
   endmodule
 ]
 
-def a1 (v: VL.source_text) : Nat :=
-  1
-
-def a :Nat:= by
-  let b := generatedFunctions.a
-
-  exact 2
 
 #reduce list_of_port_declarations[
   ()
