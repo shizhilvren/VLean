@@ -56,7 +56,7 @@ theorem Dff_posedge (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (
   | succ time =>
     cases previous : clock time <;>
       cases current : clock (time + 1) <;>
-        simp_all [D, posedgeSignal]
+        simp_all [D, «always», postedge]
     exact absurd clkEdge (by decide)
 
   -- rw [portParameterTests.D]
@@ -93,21 +93,29 @@ verilog[
     end
   endmodule
 ]
-#print D
+#print Dff
 
 example : Unit := no_inputs
 example : Wire → Wire → Reg := D
+example (clock dataSignal : Wire) :
+  D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := rfl
+example (clock first second : Wire) :
+  Dff clock first second =
+    («always» first Bool.false (postedge clock),
+     «always» second Bool.false (postedge clock)) := rfl
 example (clock dataSignal : Wire) : D clock dataSignal 0 = Bool.false := rfl
 example (clock dataSignal : Wire) (time : Nat) :
     D clock dataSignal (time + 1) =
-      (if !clock time && clock (time + 1) then dataSignal time else D clock dataSignal time) := rfl
+      (if !clock time && clock (time + 1) then dataSignal time else D clock dataSignal time) := by
+  cases previous : clock time <;> cases current : clock (time + 1) <;>
+    simp [D, «always», postedge, previous, current]
 example (clock dataSignal : Wire) (time : Nat)
     (low : clock time = Bool.false) (high : clock (time + 1) = Bool.true) :
     D clock dataSignal (time + 1) = dataSignal time := by
-  simp [D, posedgeSignal, low, high]
+  simp [D, «always», postedge, low, high]
 example (clock dataSignal : Wire) (time : Nat) (stable : clock (time + 1) = clock time) :
   D clock dataSignal (time + 1) = D clock dataSignal time := by
-  cases previous : clock time <;> simp [D, posedgeSignal, stable, previous]
+  cases previous : clock time <;> simp [D, «always», postedge, stable, previous]
 example : (List.range 6).map (D (fun time => time % 2 == 1) (fun _ => Bool.true)) =
     [Bool.false, Bool.true, Bool.true, Bool.true, Bool.true, Bool.true] := by decide
 example : multiple_inputs = fun (_: Wire) (_: Nat->Bool) (_: Wire) =>
@@ -141,6 +149,10 @@ run_cmd do
     if (`generatedFunctions).isPrefixOf name then
       Lean.logInfo m!"{name}"
 
+-- set_option trace.Elab.step true
+-- set_option trace.Elab.definition true
+set_option trace.Elab.command true
+
 verilog[
   module D(input wire clk, input wire «in», output reg out);
     always @(posedge clk) begin
@@ -151,19 +163,19 @@ verilog[
 
 theorem Dff_hold (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1) = clock n) :
   D clock dataSignal n = D clock dataSignal (n-1) := by
-  cases n with
-  | zero => simp at h
-  | succ time =>
-    simp at clkEdge
-    rw [D,posedgeSignal.eq_def]
-    simp [clkEdge]
+  apply «always».hold dataSignal Bool.false (postedge clock) n h
+  have noEdge : postedge clock n = Bool.false :=
+    (postedge.not_post clock n h).mp (by
+      rw [clkEdge]
+      cases clock n <;> decide)
+  simp [noEdge]
+
 
 theorem Dff_posedge (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1) < clock n) :
   D clock dataSignal n = dataSignal (n-1) := by
-    cases n with
-  | zero => simp at h
-  | succ time =>
-    cases previous : clock time <;>
-      cases current : clock (time + 1) <;>
-        simp_all [D, posedgeSignal]
-    exact absurd clkEdge (by decide)
+  apply «always».condition dataSignal Bool.false (postedge clock) n h
+  apply (postedge.post clock n h).mp
+  cases previous : clock (n - 1) <;>
+    cases current : clock n <;>
+      simp_all
+  exact absurd clkEdge (by decide)

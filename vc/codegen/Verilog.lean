@@ -137,7 +137,7 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
         | some (.identifier clock), .identifier dataSignal =>
           let clockName := Lean.mkIdent clock.getName
           let inputName := Lean.mkIdent dataSignal.getName
-          `(term| posedgeSignal $clockName:ident $inputName:ident)
+          `(term| «always» $inputName:ident Bool.false (postedge $clockName:ident))
         | none, _ => throwError "expected a posedge event"
     codeB ← `(term| let $portName:ident : $portType := $value
                    $codeB)

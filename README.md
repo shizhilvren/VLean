@@ -3,7 +3,7 @@
 ## Module code generation
 
 - `vc/paser/`: Verilog syntax tree, tokens, and parsing rules.
-- `vc/runtime/Signals.lean`: `Wire`, `Reg`, and `posedgeSignal` used by generated
+- `vc/runtime/Signals.lean`: `Wire`, `Reg`, and `always` / `postedge` used by generated
 	definitions. This module has no parser or metaprogramming dependencies.
 - `vc/codegen/Verilog.lean`: port and assignment extraction, Lean definition
 	generation, and the `verilog[...]` command elaborator. Imports the runtime.
