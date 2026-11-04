@@ -1,5 +1,44 @@
 # vc
 
+## Module code generation
+
+- `vc/paser/`: Verilog syntax tree, tokens, and parsing rules.
+- `vc/runtime/Signals.lean`: `Wire`, `Reg`, and `posedgeSignal` used by generated
+	definitions. This module has no parser or metaprogramming dependencies.
+- `vc/codegen/Verilog.lean`: port and assignment extraction, Lean definition
+	generation, and the `verilog[...]` command elaborator. Imports the runtime.
+- `vc/verilog.lean`: compatibility entry point importing the generator, without tests.
+- `tests/verilog_runtime.lean`: standalone signal semantics checks importing only
+	the runtime module.
+- `tests/verilog_codegen.lean`: port checks, generated module examples, and
+	`Dff_hold` / `Dff_posedge` proofs.
+- `tests/verilog_parser.lean`: parser reduction examples.
+- `tests/dff_waveform.lean`: stimuli for the generated D flip-flop and HTML waveforms.
+
+Existing clients can continue to use `import vc.verilog`. Generator tests are
+separate from the default `vc` library target. Run these commands from the
+project root:
+
+```console
+lake build
+lake build tests
+lake env lean --run tests/dff_waveform.lean
+```
+
+For just the generator tests and waveform dependencies:
+
+```console
+lake build +tests.verilog_codegen
+lake env lean --run tests/dff_waveform.lean
+```
+
+The waveform runner writes `tests/dff_waveform.html`.
+
+Code that only needs the signal types and sampling function can use
+`import vc.runtime.Signals` without loading the Verilog parser or generator.
+The dependency direction is `vc.verilog -> vc.codegen.Verilog -> vc.runtime.Signals`;
+the generator also imports `vc.paser.*`.
+
 ## Embedded Verilog subset
 
 `Vc.Basic` uses Lean `syntax` and `macro_rules` to translate single-bit

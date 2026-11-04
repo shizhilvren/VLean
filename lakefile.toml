@@ -5,6 +5,10 @@ defaultTargets = ["vc"]
 [[lean_lib]]
 name = "vc"
 
+[[lean_lib]]
+name = "tests"
+globs = ["tests.+"]
+
 [[lean_exe]]
 name = "vcl"
 root = "Main"

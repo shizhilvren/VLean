@@ -1,4 +1,4 @@
-import vc.verilog
+import tests.verilog_codegen
 
 namespace DffStimulus
 
