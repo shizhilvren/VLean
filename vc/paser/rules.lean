@@ -215,21 +215,48 @@ macro_rules
     => do
       let d' ← `(term| identifier[ $d ])
       `(term| VL.expression.identifier $d')
-  | `(term|expression[ ! $value:expression ])
-    => do
-      let value' ← `(term| expression[ $value ])
-      `(term| VL.expression.logical_not $value')
   | `(term|expression[ ( $value:expression ) ])
     => `(term| expression[ $value ])
-  | `(term|expression[ $value:bit_literal ])
+  | `(term|expression[ $primary:primary ])
     => do
-      if value.raw[0].getAtomVal == "1'b0" then
-        `(term| VL.expression.bit Bool.false)
-      else
-        `(term| VL.expression.bit Bool.true)
+      let primary ← `(term| primary[ $primary ])
+      `(term| VL.expression.primary $primary)
+  | `(term|expression[ $op:unary_operator $value:primary ])
+    => do
+      let op ← `(term| unary_operator[ $op ])
+      let value ← `(term| primary[ $value ])
+      `(term| VL.expression.unary_operator $op $value)
 
 macro_rules
-  | `(term|conditional_statement[ if ( $cond:expression ) $thenStmt:statement $[else $elseStmt:statement]? ])
+  | `(term|unary_operator[ ! ]) => `(term| VL.unary_operator.not)
+
+macro_rules
+  | `(term|primary[ $n:number ])
+    => do
+      let n' ← `(term| number[ $n ])
+      `(term| VL.primary.number $n')
+
+macro_rules
+  | `(term|number[ $bn:binary_number ])
+    => do
+      let bn' ← `(term| binary_number[ $bn ])
+      `(term| VL.number.binary_number $bn')
+macro_rules
+  | `(term|binary_number[ $bb:binary_base $bv:binary_value ])
+    => do
+      let bb' ← `(term| binary_base[ $bb ])
+      let bv' ← `(term| binary_value[ $bv ])
+      `(term| VL.binary_number.mk $bb' $bv')
+
+macro_rules
+  | `(term|binary_base[ $_ ])
+    => `(term| VL.binary_base.b)
+
+
+
+
+macro_rules
+  | `(term|conditional_statement[ if ( $cond:expression ) $thenStmt:statement_or_null $[else $elseStmt:statement_or_null]? ])
     => do
       let cond' ← `(term| expression[ $cond ])
       let thenStmt' ← `(term| statement_or_null[ $thenStmt ])

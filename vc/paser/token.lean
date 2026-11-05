@@ -122,3 +122,6 @@ token_term z_digit
 
 token binary_digit
 token_term binary_digit
+
+token unary_operator
+token_term unary_operator

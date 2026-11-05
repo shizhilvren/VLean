@@ -38,8 +38,8 @@ inductive list_of_port_declarations where
 
 inductive expression where
   | identifier (id: identifier) : expression
-  | logical_not (value: expression) : expression
-  | bit (value: Bool) : expression
+  | unary_operator (op: unary_operator) (value: primary) : expression
+  | primary (value: primary) : expression
 
 inductive event_expression where
   | posedge (e: expression) : event_expression
@@ -102,10 +102,47 @@ inductive description
 inductive source_text where
   | description (ds: List description): source_text
 
+inductive primary where
+  | number (n: number) : primary
+
+inductive number where
+  | binary_number (bn: binary_number) : number
+
+structure binary_number where
+  binary_base : binary_base
+  binary_value : binary_value
+
+inductive binary_base where
+  | b : binary_base
+
+inductive binary_digit where
+  | char_0 : binary_digit
+  | char_1 : binary_digit
+  | x_digit (xd: x_digit) : binary_digit
+  | z_digit (zd: z_digit) : binary_digit
+
+inductive x_digit where
+  | x : x_digit
+
+inductive z_digit where
+  | z : z_digit
+
+structure binary_value where
+  binary_digit : binary_digit
+  binary_digits : List VL.binary_digit
+
+inductive unary_operator where
+  | not : unary_operator
+
+
+
+
+
 end
 def identifier.getName (id: identifier) : Lean.Name :=
   match id with
   | identifier.ident n => n
+
 
 
 end VL

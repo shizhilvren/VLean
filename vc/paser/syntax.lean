@@ -60,12 +60,12 @@ syntax "negedge" expression : event_expression
 syntax event_expression "or" event_expression : event_expression
 
 -- A.6.6 Conditional statements
-syntax "if" "(" expression ")" statement ("else" statement)? : conditional_statement
+syntax "if" "(" expression ")" statement_or_null ("else" statement_or_null)? : conditional_statement
 
 -- A.8.3 Expressions
 syntax primary : expression
 syntax identifier : expression
-syntax:75 "!" expression:75 : expression
+syntax unary_operator primary : expression
 syntax "(" expression ")" : expression
 
 -- A.8.4 Primaries
@@ -73,6 +73,9 @@ syntax number : primary
 
 -- A.8.5 Expression left-side values
 syntax identifier : variable_lvalue
+
+-- A.8.6 Operators
+syntax "!" : unary_operator
 
 -- A.8.7 Numbers
 syntax ("x" <|> "X") : x_digit
