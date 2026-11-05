@@ -38,9 +38,19 @@ inductive list_of_port_declarations where
 
 inductive expression where
   | identifier (id: identifier) : expression
+  | logical_not (value: expression) : expression
+  | bit (value: Bool) : expression
 
 inductive event_expression where
   | posedge (e: expression) : event_expression
+  | negedge (e: expression) : event_expression
+  | or (lhs: event_expression) (rhs: event_expression) : event_expression
+
+structure conditional_statement where
+  cond : expression
+  then_stmt : statement_or_null
+  else_stmt : Option statement_or_null
+
 
 inductive event_control where
   | event_expression (ee: event_expression) : event_control
@@ -66,6 +76,7 @@ inductive seq_block where
   | statements (stmts: List statement) : seq_block
 
 inductive statement where
+  | conditional_statement (cs: conditional_statement) : statement
   | procedural_timing_control_statement (ptcs: procedural_timing_control_statement) : statement
   | seq_block (sb: seq_block) : statement
   | nonblocking_assignment (nba: nonblocking_assignment) : statement

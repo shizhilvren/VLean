@@ -146,6 +146,10 @@ macro_rules
     => do
       let d' ← `(term| nonblocking_assignment[ $d ])
       `(term| VL.statement.nonblocking_assignment $d')
+  | `(term|statement[ $d:conditional_statement ])
+    => do
+      let d' ← `(term| conditional_statement[ $d ])
+      `(term| VL.statement.conditional_statement $d')
 
 macro_rules
   | `(term|procedural_timing_control_statement[ $d:procedural_timing_control $s:statement_or_null ])
@@ -171,6 +175,15 @@ macro_rules
     => do
       let d' ← `(term| expression[ $d ])
       `(term| VL.event_expression.posedge $d')
+  | `(term|event_expression[ negedge $d:expression ])
+    => do
+      let d' ← `(term| expression[ $d ])
+      `(term| VL.event_expression.negedge $d')
+  | `(term|event_expression[ $lhs:event_expression or $rhs:event_expression ])
+    => do
+      let lhs' ← `(term| event_expression[ $lhs ])
+      let rhs' ← `(term| event_expression[ $rhs ])
+      `(term| VL.event_expression.or $lhs' $rhs')
 
 macro_rules
   | `(term|statement_or_null[ $s:statement ])
@@ -202,3 +215,25 @@ macro_rules
     => do
       let d' ← `(term| identifier[ $d ])
       `(term| VL.expression.identifier $d')
+  | `(term|expression[ ! $value:expression ])
+    => do
+      let value' ← `(term| expression[ $value ])
+      `(term| VL.expression.logical_not $value')
+  | `(term|expression[ ( $value:expression ) ])
+    => `(term| expression[ $value ])
+  | `(term|expression[ $value:bit_literal ])
+    => do
+      if value.raw[0].getAtomVal == "1'b0" then
+        `(term| VL.expression.bit Bool.false)
+      else
+        `(term| VL.expression.bit Bool.true)
+
+macro_rules
+  | `(term|conditional_statement[ if ( $cond:expression ) $thenStmt:statement $[else $elseStmt:statement]? ])
+    => do
+      let cond' ← `(term| expression[ $cond ])
+      let thenStmt' ← `(term| statement_or_null[ $thenStmt ])
+      let elseStmt' ← match elseStmt with
+        | none => `(term| none)
+        | some stmt => `(term| some (statement_or_null[ $stmt ]))
+      `(term| VL.conditional_statement.mk $cond' $thenStmt' $elseStmt')

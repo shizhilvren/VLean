@@ -1,3 +1,4 @@
+import Lean
 import vc.paser.token
 
 -- A.1.2 Verilog source text
@@ -36,6 +37,7 @@ syntax variable_lvalue "<=" expression : nonblocking_assignment
 syntax "begin" statement* "end" : seq_block
 
 -- A.6.4 Statements
+syntax conditional_statement : statement
 syntax procedural_timing_control_statement : statement
 syntax seq_block : statement
 syntax nonblocking_assignment ";" : statement
@@ -47,9 +49,26 @@ syntax procedural_timing_control statement_or_null : procedural_timing_control_s
 syntax event_control : procedural_timing_control
 syntax "@" "(" event_expression ")" : event_control
 syntax "posedge" expression : event_expression
+syntax "negedge" expression : event_expression
+syntax event_expression "or" event_expression : event_expression
+
+-- A.6.6 Conditional statements
+syntax "if" "(" expression ")" statement ("else" statement)? : conditional_statement
 
 -- A.8.3 Expressions
 syntax identifier : expression
+syntax:75 "!" expression:75 : expression
+syntax "(" expression ")" : expression
+def verilogBitLiteral : Lean.Parser.Parser where
+  fn := Lean.Parser.rawFn
+    (Lean.Parser.andthenFn (Lean.Parser.satisfyFn (· == '1') "single-bit width 1")
+      (Lean.Parser.andthenFn (Lean.Parser.satisfyFn (· == '\'') "'")
+        (Lean.Parser.andthenFn (Lean.Parser.satisfyFn (· == 'b') "binary base b")
+          (Lean.Parser.satisfyFn (fun digit => digit == '0' || digit == '1') "binary digit 0 or 1")))) true
+
+declare_syntax_cat bit_literal
+syntax verilogBitLiteral : bit_literal
+syntax bit_literal : expression
 
 -- A.8.5 Expression left-side values
 syntax identifier : variable_lvalue

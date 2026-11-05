@@ -1742,52 +1742,128 @@ hex_number
     ;
 
 size
-    : UNSIGNED_NUMBER
+    : non_zero_unsigned_number
     ;
 
 fixed_point_number
-    : FIXED_POINT_NUMBER
+    : unsigned_number '.' unsigned_number
     ;
 
 exponential_number
-    : EXPONENTIAL_NUMBER
+    : unsigned_number ('.' unsigned_number)? ('e' | 'E') sign? unsigned_number
     ;
 
 unsigned_number
-    : UNSIGNED_NUMBER
+    : decimal_digit (decimal_digit | '_')*
+    ;
+
+non_zero_unsigned_number
+    : non_zero_decimal_digit (decimal_digit | '_')*
     ;
 
 decimal_value
-    : UNSIGNED_NUMBER
-    | X_OR_Z_UNDERSCORE
+    : unsigned_number
+    | x_digit '_'*
+    | z_digit '_'*
     ;
 
 binary_value
-    : BINARY_VALUE
+    : binary_digit (binary_digit | '_')*
     ;
 
 octal_value
-    : OCTAL_VALUE
+    : octal_digit (octal_digit | '_')*
     ;
 
 hex_value
-    : HEX_VALUE
+    : hex_digit (hex_digit | '_')*
     ;
 
 decimal_base
-    : DECIMAL_BASE
+    : '\'' ('s' | 'S')? ('d' | 'D')
     ;
 
 binary_base
-    : BINARY_BASE
+    : '\'' ('s' | 'S')? ('b' | 'B')
     ;
 
 octal_base
-    : OCTAL_BASE
+    : '\'' ('s' | 'S')? ('o' | 'O')
     ;
 
 hex_base
-    : HEX_BASE
+    : '\'' ('s' | 'S')? ('h' | 'H')
+    ;
+
+sign
+    : '+'
+    | '-'
+    ;
+
+decimal_digit
+    : '0'
+    | non_zero_decimal_digit
+    ;
+
+non_zero_decimal_digit
+    : '1'
+    | '2'
+    | '3'
+    | '4'
+    | '5'
+    | '6'
+    | '7'
+    | '8'
+    | '9'
+    ;
+
+binary_digit
+    : '0'
+    | '1'
+    | x_digit
+    | z_digit
+    ;
+
+octal_digit
+    : '0'
+    | '1'
+    | '2'
+    | '3'
+    | '4'
+    | '5'
+    | '6'
+    | '7'
+    | x_digit
+    | z_digit
+    ;
+
+hex_digit
+    : decimal_digit
+    | 'a'
+    | 'b'
+    | 'c'
+    | 'd'
+    | 'e'
+    | 'f'
+    | 'A'
+    | 'B'
+    | 'C'
+    | 'D'
+    | 'E'
+    | 'F'
+    | x_digit
+    | z_digit
+    ;
+
+x_digit
+    : 'x'
+    | 'X'
+    ;
+
+z_digit
+    : 'z'
+    | 'Z'
+    | '?'
     ;
 
 // A.8.8 Strings

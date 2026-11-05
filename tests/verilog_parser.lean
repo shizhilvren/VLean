@@ -49,6 +49,20 @@ import vc.paser.rules
   endmodule
 ]
 
+#reduce source_text[
+  module abc (
+      input  wire clk, rst, «in» ,
+      output reg  out
+  );
+      always @(posedge clk or negedge rst) begin
+          if (!rst)
+              out <= 1'b0;
+          else
+              out <= in_;
+      end
+  endmodule
+]
+
 #reduce statement[
     out <= in_;
 ]
