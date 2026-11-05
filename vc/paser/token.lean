@@ -98,3 +98,27 @@ token_term expression
 
 token conditional_statement
 token_term conditional_statement
+
+token primary
+token_term primary
+
+token number
+token_term number
+
+token binary_number
+token_term binary_number
+
+token binary_base
+token_term binary_base
+
+token binary_value
+token_term binary_value
+
+token x_digit
+token_term x_digit
+
+token z_digit
+token_term z_digit
+
+token binary_digit
+token_term binary_digit

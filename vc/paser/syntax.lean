@@ -1,5 +1,12 @@
 import Lean
+import Lean.Parser.Basic
 import vc.paser.token
+
+
+def char_' : Lean.Parser.Parser := Lean.Parser.rawCh '\''
+def char_0 : Lean.Parser.Parser := Lean.Parser.rawCh '0'
+def char_1 : Lean.Parser.Parser := Lean.Parser.rawCh '1'
+
 
 -- A.1.2 Verilog source text
 syntax description* : source_text
@@ -56,22 +63,26 @@ syntax event_expression "or" event_expression : event_expression
 syntax "if" "(" expression ")" statement ("else" statement)? : conditional_statement
 
 -- A.8.3 Expressions
+syntax primary : expression
 syntax identifier : expression
 syntax:75 "!" expression:75 : expression
 syntax "(" expression ")" : expression
-def verilogBitLiteral : Lean.Parser.Parser where
-  fn := Lean.Parser.rawFn
-    (Lean.Parser.andthenFn (Lean.Parser.satisfyFn (· == '1') "single-bit width 1")
-      (Lean.Parser.andthenFn (Lean.Parser.satisfyFn (· == '\'') "'")
-        (Lean.Parser.andthenFn (Lean.Parser.satisfyFn (· == 'b') "binary base b")
-          (Lean.Parser.satisfyFn (fun digit => digit == '0' || digit == '1') "binary digit 0 or 1")))) true
 
-declare_syntax_cat bit_literal
-syntax verilogBitLiteral : bit_literal
-syntax bit_literal : expression
+-- A.8.4 Primaries
+syntax number : primary
 
 -- A.8.5 Expression left-side values
 syntax identifier : variable_lvalue
+
+-- A.8.7 Numbers
+syntax ("x" <|> "X") : x_digit
+syntax ("z" <|> "Z" <|> "?") : z_digit
+syntax (char_0 <|> char_1 <|> x_digit <|> z_digit) : binary_digit
+syntax binary_digit (binary_digit <|> "_")* : binary_value
+
+syntax char_' ("b" <|> "B") : binary_base
+syntax binary_base binary_value : binary_number
+syntax binary_number : number
 
 -- A.9.3 Identifiers
 syntax identifier : port_identifier
