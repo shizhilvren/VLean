@@ -1,5 +1,11 @@
 import vc.paser.rules
 
+example : binary_number[ 'b1_0 ] =
+  VL.binary_number.mk .b (VL.binary_value.mk .char_1 [.char_0]) := rfl
+
+example : binary_number[ 'B0_1 ] =
+  VL.binary_number.mk .b (VL.binary_value.mk .char_0 [.char_1]) := rfl
+
 run_cmd do
   let env ← Lean.getEnv
   for text in ["binary_base[ 'b ]", "binary_base[ 'B ]"] do

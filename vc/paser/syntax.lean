@@ -3,8 +3,7 @@ import Lean.Parser.Basic
 import vc.paser.token
 open Lean Parser
 
-def char_0 : Parser := rawCh '0'
-def char_1 : Parser := rawCh '1'
+
 
 
 -- A.1.2 Verilog source text
@@ -79,10 +78,12 @@ syntax "!" : unary_operator
 -- A.8.7 Numbers
 syntax ("x" <|> "X") : x_digit
 syntax ("z" <|> "Z" <|> "?") : z_digit
-syntax (char_0 <|> char_1 <|> x_digit <|> z_digit) : binary_digit
-syntax binary_digit (binary_digit <|> "_")* : binary_value
 
-syntax char_' ("b" <|> "B") : binary_base
+syntax (char_0 <|> char_1 <|> x_digit <|> z_digit) : binary_digit
+
+syntax binary_digit (binary_digit <|> char__)* : binary_value
+
+syntax "'" binary_base_letter : binary_base
 syntax binary_base binary_value : binary_number
 syntax binary_number : number
 

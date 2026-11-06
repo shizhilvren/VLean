@@ -22,10 +22,27 @@ macro_rules
       ← `(syntax $keyword:str $id:ident "]" : term )
     ]
 
+@[run_builtin_parser_attribute_hooks, inline]
 def char_' : Parser :=
   withAntiquot
     (mkAntiquot "char_'" `char_')
     (node `char_' (rawCh '\''))
+
+@[run_builtin_parser_attribute_hooks, inline]
+def char_0 : Parser :=
+  withAntiquot
+    (mkAntiquot "char_0" `char_0)
+    (node `char_0 (rawCh '0' true))
+
+@[run_builtin_parser_attribute_hooks, inline]
+def char_1 : Parser :=
+  withAntiquot
+    (mkAntiquot "char_1" `char_1)
+    (node `char_1 (rawCh '1' true))
+
+@[run_builtin_parser_attribute_hooks, inline]
+def char__ : Parser := rawCh '_' true
+
 
 token source_text
 token_term source_text
@@ -114,14 +131,19 @@ token_term primary
 token number
 token_term number
 
-token binary_number
-token_term binary_number
-
-token binary_base
-syntax "binary_base[" char_' ("b" <|> "B") "]" : term
-
 token binary_value
 token_term binary_value
+
+token binary_base
+token_term binary_base
+
+token binary_number
+token_term binary_number
+-- syntax "binary_number[" binary_base binary_value "]" : term
+
+
+
+
 
 token x_digit
 token_term x_digit
@@ -131,6 +153,12 @@ token_term z_digit
 
 token binary_digit
 token_term binary_digit
+
+-- syntax "binary_digit[" char_0 "]" : term
+-- syntax "binary_digit[" char_1 "]" : term
+-- syntax "binary_digit[" x_digit "]" : term
+-- syntax "binary_digit[" z_digit "]" : term
+
 
 token unary_operator
 token_term unary_operator

@@ -54,9 +54,48 @@ set_option trace.Elab.command true
   endmodule
 ]
 
-#reduce binary_base[
-  'b
+#reduce binary_digit[
+  0
 ]
+#reduce binary_digit[
+  1
+]
+
+#reduce x_digit[
+  x
+]
+
+#reduce x_digit[
+  X
+]
+
+#reduce z_digit[
+  z
+]
+
+#reduce z_digit[
+  Z
+]
+
+#reduce z_digit[
+  ?
+]
+
+
+#reduce binary_base['b]
+
+#reduce binary_value[
+  000
+]
+#reduce binary_value[
+  1_0
+]
+
+#reduce binary_value[
+  1_0_____1
+]
+
+#reduce binary_number['b1_0]
 
 #reduce source_text[
   module abc (

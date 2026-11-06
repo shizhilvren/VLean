@@ -245,19 +245,24 @@ macro_rules
 macro_rules
   | `(term|binary_number[ $bb:binary_base $bv:binary_value ])
     => do
-      let bb' ← match bb with
-        | `(binary_base| $apostrophe:char_' b) =>
-            `(term| binary_base[ $apostrophe b ])
-        | `(binary_base| $apostrophe:char_' B) =>
-            `(term| binary_base[ $apostrophe B ])
-        | _ => Lean.Macro.throwUnsupported
+      let bb' ← `(term| binary_base[ $bb ])
       let bv' ← `(term| binary_value[ $bv ])
       `(term| VL.binary_number.mk $bb' $bv')
 
+-- macro_rules
+--   | `(term|binary_number[ $bb:binary_base $bv:binary_value ])
+--     => do
+--       let bb' ← match bb with
+--         | `(binary_base| $apostrophe:char_' b) =>
+--             `(term| binary_base[ $apostrophe b ])
+--         | `(binary_base| $apostrophe:char_' B) =>
+--             `(term| binary_base[ $apostrophe B ])
+--         | _ => Lean.Macro.throwUnsupported
+--       let bv' ← `(term| binary_value[ $bv ])
+--       `(term| VL.binary_number.mk $bb' $bv')
+
 macro_rules
-  | `(term|binary_base[ $_:char_' b ])
-    => `(term| VL.binary_base.b)
-  | `(term|binary_base[ $_:char_' B ])
+  | `(term|binary_base[ ' $_:binary_base_letter ])
     => `(term| VL.binary_base.b)
 
 macro_rules
@@ -269,3 +274,47 @@ macro_rules
         | none => `(term| none)
         | some stmt => `(term| some (statement_or_null[ $stmt ]))
       `(term| VL.conditional_statement.mk $cond' $thenStmt' $elseStmt')
+
+macro_rules
+  | `(term|binary_digit[ $_:char_0 ]) => `(term| VL.binary_digit.char_0)
+  | `(term|binary_digit[ $_:char_1 ]) => `(term| VL.binary_digit.char_1)
+  | `(term|binary_digit[ x]) => `(term| x_digit[ x ])
+  | `(term|binary_digit[ X]) => `(term| x_digit[ X ])
+  | `(term|binary_digit[ z]) => `(term| z_digit[ z ])
+  | `(term|binary_digit[ Z]) => `(term| z_digit[ Z ])
+  | `(term|binary_digit[ ?]) => `(term| z_digit[ ? ])
+
+
+macro_rules
+  | `(term|x_digit[ x ]) => `(term| VL.x_digit.x)
+  | `(term|x_digit[ X ]) => `(term| VL.x_digit.x)
+
+macro_rules
+  | `(term|z_digit[ z ]) => `(term| VL.z_digit.z)
+  | `(term|z_digit[ Z ]) => `(term| VL.z_digit.z)
+  | `(term|z_digit[ ? ]) => `(term| VL.z_digit.z)
+
+macro_rules
+  | `(term| binary_value[ $first:binary_digit $[$rest ]* ]) =>
+    do
+      let convertDigit := fun (digit : Lean.TSyntax `binary_digit) => do
+        let value := digit.raw[0]
+        if value.getKind == `char_0 then
+          `(term| VL.binary_digit.char_0)
+        else if value.getKind == `char_1 then
+          `(term| VL.binary_digit.char_1)
+        else
+          match (⟨value⟩ : Lean.TSyntax [`x_digit, `z_digit]) with
+          | `(x_digit| x) | `(x_digit| X) =>
+              `(term| VL.binary_digit.x_digit VL.x_digit.x)
+          | `(z_digit| z) | `(z_digit| Z) | `(z_digit| ?) =>
+              `(term| VL.binary_digit.z_digit VL.z_digit.z)
+          | _ => Lean.Macro.throwUnsupported
+      let firstTerm ← convertDigit first
+      let mut digits := #[]
+      for item in rest do
+        if item.raw.isAtom && item.raw.getAtomVal == "_" then
+          continue
+        let digitTerm ← convertDigit ⟨item.raw⟩
+        digits := digits.push digitTerm
+      `(term| VL.binary_value.mk $firstTerm [$digits,*])
