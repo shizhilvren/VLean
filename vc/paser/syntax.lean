@@ -1,11 +1,10 @@
 import Lean
 import Lean.Parser.Basic
 import vc.paser.token
+open Lean Parser
 
-
-def char_' : Lean.Parser.Parser := Lean.Parser.rawCh '\''
-def char_0 : Lean.Parser.Parser := Lean.Parser.rawCh '0'
-def char_1 : Lean.Parser.Parser := Lean.Parser.rawCh '1'
+def char_0 : Parser := rawCh '0'
+def char_1 : Parser := rawCh '1'
 
 
 -- A.1.2 Verilog source text

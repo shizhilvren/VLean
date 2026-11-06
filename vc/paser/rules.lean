@@ -241,19 +241,24 @@ macro_rules
     => do
       let bn' ← `(term| binary_number[ $bn ])
       `(term| VL.number.binary_number $bn')
+
 macro_rules
   | `(term|binary_number[ $bb:binary_base $bv:binary_value ])
     => do
-      let bb' ← `(term| binary_base[ $bb ])
+      let bb' ← match bb with
+        | `(binary_base| $apostrophe:char_' b) =>
+            `(term| binary_base[ $apostrophe b ])
+        | `(binary_base| $apostrophe:char_' B) =>
+            `(term| binary_base[ $apostrophe B ])
+        | _ => Lean.Macro.throwUnsupported
       let bv' ← `(term| binary_value[ $bv ])
       `(term| VL.binary_number.mk $bb' $bv')
 
 macro_rules
-  | `(term|binary_base[ $_ ])
+  | `(term|binary_base[ $_:char_' b ])
     => `(term| VL.binary_base.b)
-
-
-
+  | `(term|binary_base[ $_:char_' B ])
+    => `(term| VL.binary_base.b)
 
 macro_rules
   | `(term|conditional_statement[ if ( $cond:expression ) $thenStmt:statement_or_null $[else $elseStmt:statement_or_null]? ])

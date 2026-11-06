@@ -1,5 +1,10 @@
 import vc.paser.rules
 
+set_option pp.rawOnError true
+set_option trace.Elab.step true
+set_option trace.Elab.definition true
+set_option trace.Elab.command true
+
 #reduce list_of_port_declarations[
   (input a)
 ]
@@ -47,6 +52,10 @@ import vc.paser.rules
         out <= in_;
     end
   endmodule
+]
+
+#reduce binary_base[
+  'b
 ]
 
 #reduce source_text[

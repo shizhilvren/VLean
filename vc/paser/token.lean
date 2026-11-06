@@ -1,3 +1,7 @@
+import Lean
+import Lean.Parser.Basic
+open Lean Parser
+
 syntax "token" ident : command
 macro_rules
   | `(command| token $id:ident) => `(declare_syntax_cat $id)
@@ -17,6 +21,11 @@ macro_rules
     return Lean.mkNullNode #[
       ← `(syntax $keyword:str $id:ident "]" : term )
     ]
+
+def char_' : Parser :=
+  withAntiquot
+    (mkAntiquot "char_'" `char_')
+    (node `char_' (rawCh '\''))
 
 token source_text
 token_term source_text
@@ -109,7 +118,7 @@ token binary_number
 token_term binary_number
 
 token binary_base
-token_term binary_base
+syntax "binary_base[" char_' ("b" <|> "B") "]" : term
 
 token binary_value
 token_term binary_value
