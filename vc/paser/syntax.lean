@@ -83,7 +83,6 @@ syntax (char_0 <|> char_1 <|> x_digit <|> z_digit) : binary_digit
 
 syntax binary_digit (binary_digit <|> char__)* : binary_value
 
-syntax "'" binary_base_letter : binary_base
 syntax binary_base binary_value : binary_number
 syntax binary_number : number
 
