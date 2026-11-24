@@ -1,10 +1,11 @@
 import Lean
 import Lean.Parser.Basic
 import vc.paser.token
+import vc.paser.to_char
 open Lean Parser
 
 
-
+to_ascii_term num_0 "0"
 
 -- A.1.2 Verilog source text
 syntax description* : source_text

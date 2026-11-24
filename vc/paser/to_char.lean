@@ -14,6 +14,18 @@ elab "declare_ascii_terminals" : command => do
 
 declare_ascii_terminals
 
+macro "to_ascii_term " category:ident input:str : command => do
+  let mut terminals : Array (TSyntax `stx) := #[]
+  for character in input.getString.toList do
+    let code := character.toNat
+    if code > 127 then
+      Macro.throwErrorAt input "to_ascii_term expects standard ASCII input"
+    let token : TSyntax `str := ⟨Syntax.mkStrLit s!"u{code}"⟩
+    terminals := terminals.push (← `(stx| $token:str))
+  let categoryDeclaration ← `(command| declare_syntax_cat $category:ident)
+  let terminalDeclaration ← `(command| syntax $[$terminals:stx]* : $category:ident)
+  return ⟨mkNullNode #[categoryDeclaration.raw, terminalDeclaration.raw]⟩
+
 /-- 字节语言的序列，解释为 Array UInt8。 -/
 syntax "ascii[" ascii_terminal* "]" : term
 
