@@ -10,6 +10,33 @@ def resetConditional : VL.conditional_statement := ascii_apply "conditional_stat
 
 #reduce resetConditional
 
+def resetAlways : VL.always_construct := ascii_apply "always_construct" "EOF" [
+  always @(posedge clk or negedge rst) begin
+          if (!rst)
+              out <= 1'b0;
+          else
+              out <= in_;
+      end
+      ]"EOF"
+
+example : resetAlways =
+  VL.always_construct.always
+    (VL.statement.procedural_timing_control_statement
+      (VL.procedural_timing_control_statement.mk
+        (VL.procedural_timing_control.event_control
+          (VL.event_control.event_expression
+            (VL.event_expression.or
+              (VL.event_expression.posedge
+                (VL.expression.identifier (VL.identifier.ident `clk)))
+              (VL.event_expression.negedge
+                (VL.expression.identifier (VL.identifier.ident `rst))))))
+        (VL.statement_or_null.statement
+          (VL.statement.seq_block
+            (VL.seq_block.statements
+              [VL.statement.conditional_statement resetConditional]))))) := rfl
+
+#reduce resetAlways
+
 example : resetConditional.cond =
   VL.expression.unary_operator VL.unary_operator.not
     (VL.primary.hierarchical_identifier

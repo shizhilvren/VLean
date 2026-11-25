@@ -25,6 +25,8 @@ to_ascii_term char_semicolon ";"
 to_ascii_term char_less "<"
 to_ascii_term char_equal "="
 to_ascii_term char_dollor "$"
+to_ascii_term char_at "@"
+
 
 to_ascii_term char_a "a"
 to_ascii_term char_b "b"
@@ -103,3 +105,8 @@ syntax (char_A <|> char_B <|> char_C <|> char_D <|> char_E <|> char_F <|> char_G
 to_ascii_term keyword_if "if"
 to_ascii_term keyword_else "else"
 to_ascii_term keyword_always "always"
+to_ascii_term keyword_begin "begin"
+to_ascii_term keyword_end "end"
+to_ascii_term keyword_posedge "posedge"
+to_ascii_term keyword_negedge "negedge"
+to_ascii_term keyword_or "or"

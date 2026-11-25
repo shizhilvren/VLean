@@ -156,10 +156,9 @@ macro_rules
       `(term| VL.module_or_generate_item.always_construct $d')
 
 macro_rules
-  | `(term|always_construct[ always $s:statement ])
-    => do
-      let s' ← `(term| statement[ $s ])
-      `(term| VL.always_construct.always $s')
+  | `(term|always_construct[ $_:ascii_spaces $_:keyword_always $_:ascii_spaces $body:statement $_:ascii_spaces ]) => do
+      let body ← `(term| statement[ $body ])
+      `(term| VL.always_construct.always $body)
 
 macro_rules
   | `(term|statement[ $d:procedural_timing_control_statement ])
@@ -176,11 +175,10 @@ macro_rules
       `(term| VL.statement.conditional_statement $d')
 
 macro_rules
-  | `(term|procedural_timing_control_statement[ $d:procedural_timing_control $s:statement_or_null ])
-    => do
-      let d' ← `(term| procedural_timing_control[ $d ])
-      let s' ← `(term| statement_or_null[ $s ])
-      `(term| VL.procedural_timing_control_statement.mk $d' $s')
+  | `(term|procedural_timing_control_statement[ $control:procedural_timing_control $_:ascii_spaces $body:statement_or_null ]) => do
+      let control ← `(term| procedural_timing_control[ $control ])
+      let body ← `(term| statement_or_null[ $body ])
+      `(term| VL.procedural_timing_control_statement.mk $control $body)
 
 macro_rules
   | `(term|procedural_timing_control[ $d:event_control ])
@@ -189,25 +187,21 @@ macro_rules
       `(term| VL.procedural_timing_control.event_control $d')
 
 macro_rules
-  | `(term|event_control[ @ ( $d:event_expression ) ])
-    => do
-      let d' ← `(term| event_expression[ $d ])
-      `(term| VL.event_control.event_expression $d')
+  | `(term|event_control[ $_:ascii_spaces $_:char_at $_:ascii_spaces $_:char_open_paren $_:ascii_spaces $event:event_expression $_:ascii_spaces $_:char_close_paren ]) => do
+      let event ← `(term| event_expression[ $event ])
+      `(term| VL.event_control.event_expression $event)
 
 macro_rules
-  | `(term|event_expression[ posedge $d:expression ])
-    => do
-      let d' ← `(term| expression[ $d ])
-      `(term| VL.event_expression.posedge $d')
-  | `(term|event_expression[ negedge $d:expression ])
-    => do
-      let d' ← `(term| expression[ $d ])
-      `(term| VL.event_expression.negedge $d')
-  | `(term|event_expression[ $lhs:event_expression or $rhs:event_expression ])
-    => do
-      let lhs' ← `(term| event_expression[ $lhs ])
-      let rhs' ← `(term| event_expression[ $rhs ])
-      `(term| VL.event_expression.or $lhs' $rhs')
+  | `(term|event_expression[ $_:keyword_posedge $_:ascii_spaces $value:expression ]) => do
+    let value ← `(term| expression[ $value ])
+    `(term| VL.event_expression.posedge $value)
+  | `(term|event_expression[ $_:keyword_negedge $_:ascii_spaces $value:expression ]) => do
+    let value ← `(term| expression[ $value ])
+    `(term| VL.event_expression.negedge $value)
+  | `(term|event_expression[ $left:event_expression $_:ascii_spaces $_:keyword_or $_:ascii_spaces $right:event_expression ]) => do
+    let left ← `(term| event_expression[ $left ])
+    let right ← `(term| event_expression[ $right ])
+    `(term| VL.event_expression.or $left $right)
 
 macro_rules
   | `(term|statement_or_null[ $s:statement ])
@@ -216,10 +210,9 @@ macro_rules
       `(term| VL.statement_or_null.statement $s')
 
 macro_rules
-  | `(term|seq_block[ begin $[$stmts:statement]* end ])
-    => do
-      let stmts' ← stmts.mapM fun stmt => `(term| statement[ $stmt ])
-      `(term| VL.seq_block.statements [$stmts',*])
+  | `(term|seq_block[ $_:ascii_spaces $_:keyword_begin $_:ascii_spaces $[$statements:statement]* $_:keyword_end $_:ascii_spaces ]) => do
+      let statements ← statements.mapM fun body => `(term| statement[ $body ])
+      `(term| VL.seq_block.statements [$statements,*])
 
 
 

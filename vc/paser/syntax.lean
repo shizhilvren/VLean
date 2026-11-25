@@ -37,11 +37,11 @@ syntax module_or_generate_item : module_item
 syntax always_construct : module_or_generate_item
 
 -- A.6.2 Procedural blocks and assignments
-syntax "always" statement : always_construct
+syntax ascii_spaces keyword_always ascii_spaces statement ascii_spaces : always_construct
 syntax variable_lvalue ascii_spaces char_less char_equal ascii_spaces expression : nonblocking_assignment
 
 -- A.6.3 Parallel and sequential blocks
-syntax "begin" statement* "end" : seq_block
+syntax ascii_spaces keyword_begin ascii_spaces (atomic(statement))* keyword_end ascii_spaces : seq_block
 
 -- A.6.4 Statements
 syntax conditional_statement : statement
@@ -52,12 +52,12 @@ syntax ascii_spaces nonblocking_assignment ascii_spaces char_semicolon ascii_spa
 syntax statement : statement_or_null
 
 -- A.6.5 Timing control statements
-syntax procedural_timing_control statement_or_null : procedural_timing_control_statement
+syntax procedural_timing_control ascii_spaces statement_or_null : procedural_timing_control_statement
 syntax event_control : procedural_timing_control
-syntax "@" "(" event_expression ")" : event_control
-syntax "posedge" expression : event_expression
-syntax "negedge" expression : event_expression
-syntax event_expression "or" event_expression : event_expression
+syntax ascii_spaces char_at ascii_spaces char_open_paren ascii_spaces event_expression ascii_spaces char_close_paren : event_control
+syntax keyword_posedge ascii_spaces expression : event_expression
+syntax keyword_negedge ascii_spaces expression : event_expression
+syntax event_expression atomic(ascii_spaces keyword_or ascii_spaces event_expression) : event_expression
 
 -- A.6.6 Conditional statements
 syntax ascii_spaces keyword_if ascii_spaces char_open_paren ascii_spaces expression ascii_spaces char_close_paren ascii_spaces statement_or_null (keyword_else ascii_spaces statement_or_null)? : conditional_statement
