@@ -21,7 +21,6 @@ to_ascii_term char_? "?"
 to_ascii_term char_semicolon ";"
 to_ascii_term char_less "<"
 to_ascii_term char_equal "="
-
 to_ascii_term char_dollor "$"
 
 to_ascii_term char_a "a"
@@ -78,8 +77,16 @@ to_ascii_term char_X "X"
 to_ascii_term char_Y "Y"
 to_ascii_term char_Z "Z"
 
+to_ascii_term char_space " "
+to_ascii_term char_tab "\t"
+to_ascii_term char_line_feed "\n"
+to_ascii_term char_carriage_return "\r"
+
 declare_syntax_cat ascii_space
-syntax ("u32" <|> "u9" <|> "u10" <|> "u13") : ascii_space
+syntax (char_space <|> char_tab <|> char_line_feed <|> char_carriage_return) : ascii_space
+declare_syntax_cat ascii_spaces
+syntax (ascii_space*) : ascii_spaces
+
 
 declare_syntax_cat ascii_lower_alpha
 syntax (char_a <|> char_b <|> char_c <|> char_d <|> char_e <|> char_f <|> char_g <|> char_h <|> char_i <|> char_j <|> char_k <|> char_l <|> char_m <|> char_n <|> char_o <|> char_p <|> char_q <|> char_r <|> char_s <|> char_t <|> char_u <|> char_v <|> char_w <|> char_x <|> char_y <|> char_z) : ascii_lower_alpha

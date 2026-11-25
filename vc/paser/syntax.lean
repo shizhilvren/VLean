@@ -38,7 +38,7 @@ syntax always_construct : module_or_generate_item
 
 -- A.6.2 Procedural blocks and assignments
 syntax "always" statement : always_construct
-syntax variable_lvalue ascii_space* char_less char_equal ascii_space* expression : nonblocking_assignment
+syntax variable_lvalue ascii_spaces char_less char_equal ascii_spaces expression : nonblocking_assignment
 
 -- A.6.3 Parallel and sequential blocks
 syntax "begin" statement* "end" : seq_block
@@ -47,7 +47,7 @@ syntax "begin" statement* "end" : seq_block
 syntax conditional_statement : statement
 syntax procedural_timing_control_statement : statement
 syntax seq_block : statement
-syntax ascii_space* nonblocking_assignment ascii_space* char_semicolon ascii_space* : statement
+syntax ascii_spaces nonblocking_assignment ascii_spaces char_semicolon ascii_spaces : statement
 
 syntax statement : statement_or_null
 

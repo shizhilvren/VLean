@@ -13,12 +13,12 @@ macro_rules
     `(term| VL.identifier.ident $(Lean.quote (Lean.Name.mkSimple name)))
 
 macro_rules
-  | `(term| statement[ $[$_:ascii_space]* $assignment:nonblocking_assignment $[$_:ascii_space]* $_:char_semicolon $[$_:ascii_space]* ]) => do
+  | `(term| statement[ $_:ascii_spaces $assignment:nonblocking_assignment $_:ascii_spaces $_:char_semicolon $_:ascii_spaces ]) => do
     let assignment ← `(term| nonblocking_assignment[ $assignment ])
     `(term| VL.statement.nonblocking_assignment $assignment)
 
 macro_rules
-  | `(term| nonblocking_assignment[ $target:variable_lvalue $[$_:ascii_space]* $_:char_less $_:char_equal $[$_:ascii_space]* $value:expression ]) => do
+  | `(term| nonblocking_assignment[ $target:variable_lvalue $_:ascii_spaces $_:char_less $_:char_equal $_:ascii_spaces $value:expression ]) => do
     let target ← `(term| variable_lvalue[ $target ])
     let value ← `(term| expression[ $value ])
     `(term| VL.nonblocking_assignment.mk $target $value)
