@@ -60,22 +60,25 @@ syntax "negedge" expression : event_expression
 syntax event_expression "or" event_expression : event_expression
 
 -- A.6.6 Conditional statements
-syntax "if" "(" expression ")" statement_or_null ("else" statement_or_null)? : conditional_statement
+syntax ascii_spaces keyword_if ascii_spaces char_open_paren ascii_spaces expression ascii_spaces char_close_paren ascii_spaces statement_or_null (keyword_else ascii_spaces statement_or_null)? : conditional_statement
 
 -- A.8.3 Expressions
 syntax primary : expression
 syntax identifier : expression
 syntax unary_operator primary : expression
+syntax unary_operator ascii_spaces primary : expression
 syntax "(" expression ")" : expression
 
 -- A.8.4 Primaries
 syntax number : primary
+syntax hierarchical_identifier : primary
 
 -- A.8.5 Expression left-side values
 syntax identifier : variable_lvalue
+syntax identifier : hierarchical_identifier
 
 -- A.8.6 Operators
-syntax "!" : unary_operator
+syntax char_! : unary_operator
 syntax char_' (char_b <|> char_B) : binary_base
 
 -- A.8.7 Numbers

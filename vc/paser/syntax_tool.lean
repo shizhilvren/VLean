@@ -15,9 +15,12 @@ to_ascii_term char_7 "7"
 to_ascii_term char_8 "8"
 to_ascii_term char_9 "9"
 to_ascii_term char_' "'"
--- to_ascii_term char_apostrophe "'"
 to_ascii_term char__ "_"
 to_ascii_term char_? "?"
+to_ascii_term char_! "!"
+
+to_ascii_term char_open_paren "("
+to_ascii_term char_close_paren ")"
 to_ascii_term char_semicolon ";"
 to_ascii_term char_less "<"
 to_ascii_term char_equal "="
@@ -77,6 +80,8 @@ to_ascii_term char_X "X"
 to_ascii_term char_Y "Y"
 to_ascii_term char_Z "Z"
 
+
+
 to_ascii_term char_space " "
 to_ascii_term char_tab "\t"
 to_ascii_term char_line_feed "\n"
@@ -93,3 +98,8 @@ syntax (char_a <|> char_b <|> char_c <|> char_d <|> char_e <|> char_f <|> char_g
 
 declare_syntax_cat ascii_upper_alpha
 syntax (char_A <|> char_B <|> char_C <|> char_D <|> char_E <|> char_F <|> char_G <|> char_H <|> char_I <|> char_J <|> char_K <|> char_L <|> char_M <|> char_N <|> char_O <|> char_P <|> char_Q <|> char_R <|> char_S <|> char_T <|> char_U <|> char_V <|> char_W <|> char_X <|> char_Y <|> char_Z) : ascii_upper_alpha
+
+
+to_ascii_term keyword_if "if"
+to_ascii_term keyword_else "else"
+to_ascii_term keyword_always "always"

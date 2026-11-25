@@ -104,6 +104,10 @@ inductive source_text where
 
 inductive primary where
   | number (n: number) : primary
+  | hierarchical_identifier (hi: hierarchical_identifier) : primary
+
+inductive hierarchical_identifier where
+  | identifier (id: identifier) : hierarchical_identifier
 
 inductive number where
   | binary_number (bn: binary_number) : number

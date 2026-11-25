@@ -1,9 +1,36 @@
 import vc.paser.rules
 import vc.paser.to_char
 
+def resetConditional : VL.conditional_statement := ascii_apply "conditional_statement" "EOF" [
+       if (!rst)
+        out <= 1'b0;
+      else
+        out <= in_;
+    ]"EOF"
+
+#reduce resetConditional
+
+example : resetConditional.cond =
+  VL.expression.unary_operator VL.unary_operator.not
+    (VL.primary.hierarchical_identifier
+      (VL.hierarchical_identifier.identifier (VL.identifier.ident `rst))) := rfl
+
+example : resetConditional.then_stmt =
+  VL.statement_or_null.statement
+    (ascii_apply "statement" "EOF" [out <= 1'b0;]"EOF") := rfl
+
+example : resetConditional.else_stmt =
+  some (VL.statement_or_null.statement
+    (ascii_apply "statement" "EOF" [out <= in_;]"EOF")) := rfl
+
+example : (ascii_apply "conditional_statement" "EOF" [if (rst) out <= in_;]"EOF" : VL.conditional_statement).else_stmt =
+  none := rfl
+
 #check (ascii_apply "statement" "EOF" [out <= 1'b0;]"EOF" : VL.statement)
 
-example : ascii_apply "statement" "EOF" [out <= 1'b0;]"EOF" =
+example : ascii_apply "statement" "EOF" [
+out <= 1'b0;
+]"EOF" =
     VL.statement.nonblocking_assignment
       (VL.nonblocking_assignment.mk
         (VL.variable_lvalue.identifier (VL.identifier.ident `out))

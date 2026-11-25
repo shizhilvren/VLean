@@ -122,6 +122,9 @@ token_term variable_lvalue
 token expression
 token_term expression
 
+token hierarchical_identifier
+token_term hierarchical_identifier
+
 token conditional_statement
 token_term conditional_statement
 

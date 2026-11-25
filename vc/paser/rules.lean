@@ -245,11 +245,23 @@ macro_rules
       let op ← `(term| unary_operator[ $op ])
       let value ← `(term| primary[ $value ])
       `(term| VL.expression.unary_operator $op $value)
+  | `(term|expression[ $op:unary_operator $_:ascii_spaces $value:primary ]) => do
+      let op ← `(term| unary_operator[ $op ])
+      let value ← `(term| primary[ $value ])
+      `(term| VL.expression.unary_operator $op $value)
 
 macro_rules
-  | `(term|unary_operator[ ! ]) => `(term| VL.unary_operator.not)
+  | `(term|unary_operator[ u33 ]) => `(term| VL.unary_operator.not)
 
 macro_rules
+  | `(term|hierarchical_identifier[ $identifier:identifier ]) => do
+      let identifier ← `(term| identifier[ $identifier ])
+      `(term| VL.hierarchical_identifier.identifier $identifier)
+
+macro_rules
+  | `(term|primary[ $identifier:hierarchical_identifier ]) => do
+      let identifier ← `(term| hierarchical_identifier[ $identifier ])
+      `(term| VL.primary.hierarchical_identifier $identifier)
   | `(term|primary[ $n:number ])
     => do
       let n' ← `(term| number[ $n ])
@@ -289,7 +301,7 @@ macro_rules
   --   => `(term| VL.binary_base.B)
 
 macro_rules
-  | `(term|conditional_statement[ if ( $cond:expression ) $thenStmt:statement_or_null $[else $elseStmt:statement_or_null]? ])
+  | `(term|conditional_statement[ $_:ascii_spaces $_:keyword_if $_:ascii_spaces $_:char_open_paren $_:ascii_spaces $cond:expression $_:ascii_spaces $_:char_close_paren $_:ascii_spaces $thenStmt:statement_or_null $[$_:keyword_else $_:ascii_spaces $elseStmt:statement_or_null]? ])
     => do
       let cond' ← `(term| expression[ $cond ])
       let thenStmt' ← `(term| statement_or_null[ $thenStmt ])
