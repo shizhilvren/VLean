@@ -79,10 +79,12 @@ syntax "!" : unary_operator
 syntax char_' (char_b <|> char_B) : binary_base
 
 -- A.8.7 Numbers
-syntax ("x" <|> "X") : x_digit
-syntax ("z" <|> "Z" <|> "?") : z_digit
+syntax (char_x <|> char_X) : x_digit
+syntax (char_z <|> char_Z <|> char_?) : z_digit
 
-syntax (char_0 <|> char_1 <|> x_digit <|> z_digit) : binary_digit
+syntax (char_0 <|> char_1) : binary_digit
+syntax x_digit : binary_digit
+syntax z_digit : binary_digit
 
 syntax binary_digit (binary_digit <|> char__)* : binary_value
 
