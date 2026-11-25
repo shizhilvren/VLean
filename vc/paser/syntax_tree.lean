@@ -111,6 +111,7 @@ inductive number where
 structure binary_number where
   binary_base : binary_base
   binary_value : binary_value
+  size : Option Nat := none
 
 inductive binary_base where
   | b : binary_base

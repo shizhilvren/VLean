@@ -38,7 +38,7 @@ syntax always_construct : module_or_generate_item
 
 -- A.6.2 Procedural blocks and assignments
 syntax "always" statement : always_construct
-syntax variable_lvalue "<=" expression : nonblocking_assignment
+syntax variable_lvalue ascii_space* char_less char_equal ascii_space* expression : nonblocking_assignment
 
 -- A.6.3 Parallel and sequential blocks
 syntax "begin" statement* "end" : seq_block
@@ -47,7 +47,7 @@ syntax "begin" statement* "end" : seq_block
 syntax conditional_statement : statement
 syntax procedural_timing_control_statement : statement
 syntax seq_block : statement
-syntax nonblocking_assignment ";" : statement
+syntax ascii_space* nonblocking_assignment ascii_space* char_semicolon ascii_space* : statement
 
 syntax statement : statement_or_null
 
@@ -88,10 +88,23 @@ syntax z_digit : binary_digit
 
 syntax binary_digit (binary_digit <|> char__)* : binary_value
 
-syntax binary_base binary_value : binary_number
+syntax (size)? binary_base binary_value : binary_number
+syntax non_zero_unsigned_number : size
+syntax non_zero_decimal_digit (decimal_digit <|> char__)* : non_zero_unsigned_number
+
+syntax char_0 : decimal_digit
+syntax non_zero_decimal_digit : decimal_digit
+
+syntax (char_1 <|> char_2 <|> char_3 <|> char_4 <|> char_5 <|> char_6 <|> char_7 <|> char_8 <|> char_9) : non_zero_decimal_digit
+
 syntax binary_number : number
 
 -- A.9.3 Identifiers
 syntax identifier : port_identifier
 syntax identifier : module_identifier
 syntax ident : identifier
+syntax simple_identifier : identifier
+syntax
+  (ascii_upper_alpha <|> ascii_lower_alpha <|> char__)
+  (ascii_upper_alpha <|> ascii_lower_alpha <|>
+   decimal_digit <|> char__ <|> char_dollor)* : simple_identifier

@@ -2,6 +2,34 @@ import vc.paser.token
 import vc.paser.syntax_tree
 import vc.paser.syntax
 
+private partial def asciiSyntaxText : Lean.Syntax → String
+  | .atom _ value => String.singleton (Char.ofNat (value.drop 1).toString.toNat!)
+  | .node _ _ arguments => String.join (arguments.toList.map asciiSyntaxText)
+  | _ => ""
+
+macro_rules
+  | `(term| identifier[ $identifier:simple_identifier ]) => do
+    let name := asciiSyntaxText identifier.raw
+    `(term| VL.identifier.ident $(Lean.quote (Lean.Name.mkSimple name)))
+
+macro_rules
+  | `(term| statement[ $[$_:ascii_space]* $assignment:nonblocking_assignment $[$_:ascii_space]* $_:char_semicolon $[$_:ascii_space]* ]) => do
+    let assignment ← `(term| nonblocking_assignment[ $assignment ])
+    `(term| VL.statement.nonblocking_assignment $assignment)
+
+macro_rules
+  | `(term| nonblocking_assignment[ $target:variable_lvalue $[$_:ascii_space]* $_:char_less $_:char_equal $[$_:ascii_space]* $value:expression ]) => do
+    let target ← `(term| variable_lvalue[ $target ])
+    let value ← `(term| expression[ $value ])
+    `(term| VL.nonblocking_assignment.mk $target $value)
+
+macro_rules
+  | `(term| binary_number[ $size:size $base:binary_base $value:binary_value ]) => do
+    let width := (asciiSyntaxText size.raw |>.replace "_" "").toNat!
+    let base ← `(term| binary_base[ $base ])
+    let value ← `(term| binary_value[ $value ])
+    `(term| VL.binary_number.mk $base $value (some $(Lean.quote width)))
+
 macro_rules
   | `(term|source_text[ $ds:description* ])
     => do

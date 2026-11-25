@@ -139,11 +139,21 @@ token_term binary_base
 
 token binary_number
 token_term binary_number
--- syntax "binary_number[" binary_base binary_value "]" : term
 
+token size
+token_term size
 
+token non_zero_unsigned_number
+token_term non_zero_unsigned_number
 
+token decimal_digit
+token_term decimal_digit
 
+token non_zero_decimal_digit
+token_term non_zero_decimal_digit
+
+token simple_identifier
+token_term simple_identifier
 
 token x_digit
 token_term x_digit
