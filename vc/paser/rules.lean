@@ -170,10 +170,6 @@ macro_rules
     => do
       let d' ← `(term| seq_block[ $d ])
       `(term| VL.statement.seq_block $d')
-  | `(term|statement[ $d:nonblocking_assignment ; ])
-    => do
-      let d' ← `(term| nonblocking_assignment[ $d ])
-      `(term| VL.statement.nonblocking_assignment $d')
   | `(term|statement[ $d:conditional_statement ])
     => do
       let d' ← `(term| conditional_statement[ $d ])
@@ -225,12 +221,7 @@ macro_rules
       let stmts' ← stmts.mapM fun stmt => `(term| statement[ $stmt ])
       `(term| VL.seq_block.statements [$stmts',*])
 
-macro_rules
-  | `(term|nonblocking_assignment[ $l:variable_lvalue <= $e:expression ])
-    => do
-      let l' ← `(term| variable_lvalue[ $l ])
-      let e' ← `(term| expression[ $e ])
-      `(term| VL.nonblocking_assignment.mk $l' $e')
+
 
 macro_rules
   | `(term|variable_lvalue[ $d:identifier ])
