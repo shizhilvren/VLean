@@ -82,10 +82,11 @@ def asciiRaw : Lean.Parser.Parser :=
 终止条件为 `]` 紧接与起始校验串同值的字符串字面量，方括号不要求配对。
 标准 ASCII 仅使用 u0 到 u127；u128 到 u255 仍可直接书写。
 -/
-syntax "ascii%" str "[" asciiRaw "]" str : term
+syntax "ascii" str "[" asciiRaw "]" str : term
+syntax "ascii_apply" str str "[" asciiRaw "]" str : term
 
-macro_rules
-  | `(ascii% $checkSum:str [ $text:asciiRaw ] $closing:str) => do
+private def asciiTerminals (checkSum : TSyntax `str) (text : TSyntax `asciiRaw)
+    (closing : TSyntax `str) : MacroM (Array (TSyntax `ascii_terminal)) := do
     unless checkSum.getString == closing.getString do
       Macro.throwErrorAt closing "closing checksum does not match opening checksum"
     let mut terminals : Array (TSyntax `ascii_terminal) := #[]
@@ -97,4 +98,22 @@ macro_rules
       let token := mkAtom s!"u{code}"
       let node := Syntax.node .none (Name.mkSimple s!"ascii_u{code}") #[token]
       terminals := terminals.push ⟨node⟩
-    `(ascii[$terminals:ascii_terminal*])
+    return terminals
+
+macro_rules
+  | `(ascii $checkSum:str [ $text:asciiRaw ] $closing:str) => do
+    let terminals ← asciiTerminals checkSum text closing
+    return mkNullNode (terminals.map TSyntax.raw)
+
+elab "ascii_apply_aux%" sym:str "[" terminals:ascii_terminal* "]" : term <= expectedType => do
+    let body := String.intercalate " "
+      (terminals.toList.map fun terminal => (terminal.raw.getArg 0).getAtomVal)
+    let source := s!"{sym.getString}[{body}]"
+    match Lean.Parser.runParserCategory (← getEnv) `term source with
+    | .ok expanded => Lean.Elab.Term.elabTerm expanded expectedType
+    | .error message => throwErrorAt sym message
+
+macro_rules
+  | `(ascii_apply $sym:str $checkSum:str [ $text:asciiRaw ] $closing:str) => do
+    let terminals ← asciiTerminals checkSum text closing
+    `(ascii_apply_aux% $sym:str [ $terminals:ascii_terminal* ])

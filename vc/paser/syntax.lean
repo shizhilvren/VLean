@@ -2,10 +2,11 @@ import Lean
 import Lean.Parser.Basic
 import vc.paser.token
 import vc.paser.to_char
+import vc.paser.syntax_tool
 open Lean Parser
 
 
-to_ascii_term num_0 "0"
+
 
 -- A.1.2 Verilog source text
 syntax description* : source_text
@@ -75,6 +76,7 @@ syntax identifier : variable_lvalue
 
 -- A.8.6 Operators
 syntax "!" : unary_operator
+syntax char_' (char_b <|> char_B) : binary_base
 
 -- A.8.7 Numbers
 syntax ("x" <|> "X") : x_digit

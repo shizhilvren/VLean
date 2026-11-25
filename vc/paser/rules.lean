@@ -262,8 +262,10 @@ macro_rules
 --       `(term| VL.binary_number.mk $bb' $bv')
 
 macro_rules
-  | `(term|binary_base[ ' $_:binary_base_letter ])
+  | `(term|binary_base[ $_:char_' $_:char_b ])
     => `(term| VL.binary_base.b)
+  -- | `(term|binary_base[ $_:char_' $_:char_B ])
+  --   => `(term| VL.binary_base.B)
 
 macro_rules
   | `(term|conditional_statement[ if ( $cond:expression ) $thenStmt:statement_or_null $[else $elseStmt:statement_or_null]? ])
@@ -275,14 +277,14 @@ macro_rules
         | some stmt => `(term| some (statement_or_null[ $stmt ]))
       `(term| VL.conditional_statement.mk $cond' $thenStmt' $elseStmt')
 
-macro_rules
-  | `(term|binary_digit[ $_:char_0 ]) => `(term| VL.binary_digit.char_0)
-  | `(term|binary_digit[ $_:char_1 ]) => `(term| VL.binary_digit.char_1)
-  | `(term|binary_digit[ x]) => `(term| x_digit[ x ])
-  | `(term|binary_digit[ X]) => `(term| x_digit[ X ])
-  | `(term|binary_digit[ z]) => `(term| z_digit[ z ])
-  | `(term|binary_digit[ Z]) => `(term| z_digit[ Z ])
-  | `(term|binary_digit[ ?]) => `(term| z_digit[ ? ])
+-- macro_rules
+--   | `(term|binary_digit[ $_:char_0 ]) => `(term| VL.binary_digit.char_0)
+--   | `(term|binary_digit[ $_:char_1 ]) => `(term| VL.binary_digit.char_1)
+--   | `(term|binary_digit[ x]) => `(term| x_digit[ x ])
+--   | `(term|binary_digit[ X]) => `(term| x_digit[ X ])
+--   | `(term|binary_digit[ z]) => `(term| z_digit[ z ])
+--   | `(term|binary_digit[ Z]) => `(term| z_digit[ Z ])
+--   | `(term|binary_digit[ ?]) => `(term| z_digit[ ? ])
 
 
 macro_rules

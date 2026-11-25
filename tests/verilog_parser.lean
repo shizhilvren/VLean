@@ -1,4 +1,5 @@
 import vc.paser.rules
+import vc.paser.to_char
 
 set_option pp.rawOnError true
 set_option trace.Elab.step true
@@ -81,8 +82,7 @@ set_option trace.Elab.command true
   ?
 ]
 
-
-#reduce binary_base['b]
+example : ascii_apply "binary_base" "EOF" ['b]"EOF" = VL.binary_base.b := by rfl
 
 #reduce binary_value[
   000

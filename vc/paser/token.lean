@@ -22,26 +22,26 @@ macro_rules
       ← `(syntax $keyword:str $id:ident "]" : term )
     ]
 
-@[run_builtin_parser_attribute_hooks, inline]
-def char_' : Parser :=
-  withAntiquot
-    (mkAntiquot "char_'" `char_')
-    (node `char_' (rawCh '\''))
+-- @[run_builtin_parser_attribute_hooks, inline]
+-- def char_' : Parser :=
+--   withAntiquot
+--     (mkAntiquot "char_'" `char_')
+--     (node `char_' (rawCh '\''))
 
-@[run_builtin_parser_attribute_hooks, inline]
-def char_0 : Parser :=
-  withAntiquot
-    (mkAntiquot "char_0" `char_0)
-    (node `char_0 (rawCh '0' true))
+-- @[run_builtin_parser_attribute_hooks, inline]
+-- def char_0 : Parser :=
+--   withAntiquot
+--     (mkAntiquot "char_0" `char_0)
+--     (node `char_0 (rawCh '0' true))
 
-@[run_builtin_parser_attribute_hooks, inline]
-def char_1 : Parser :=
-  withAntiquot
-    (mkAntiquot "char_1" `char_1)
-    (node `char_1 (rawCh '1' true))
+-- @[run_builtin_parser_attribute_hooks, inline]
+-- def char_1 : Parser :=
+--   withAntiquot
+--     (mkAntiquot "char_1" `char_1)
+--     (node `char_1 (rawCh '1' true))
 
-@[run_builtin_parser_attribute_hooks, inline]
-def char__ : Parser := rawCh '_' true
+-- @[run_builtin_parser_attribute_hooks, inline]
+-- def char__ : Parser := rawCh '_' true
 
 
 token source_text
