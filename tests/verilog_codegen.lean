@@ -1,32 +1,32 @@
 import vc.verilog
 
-example : outputPorts (some (list_of_port_declarations[
+example : outputPorts (some (ascii_apply "list_of_port_declarations" "EOF" [
     (input wire x, output reg a,b, output wire c,d, output e)
-  ])) = [(`a, ``Reg), (`b, ``Reg), (`c, ``Wire), (`d, ``Wire), (`e, ``Wire)] := rfl
+  ]"EOF")) = [(`a, ``Reg), (`b, ``Reg), (`c, ``Wire), (`d, ``Wire), (`e, ``Wire)] := rfl
 
-example : outputPorts (some (list_of_port_declarations[()])) = [] := rfl
+example : outputPorts (some (ascii_apply "list_of_port_declarations" "EOF" [()]"EOF")) = [] := rfl
 example : outputPorts none = [] := rfl
-example : outputPorts (some (list_of_port_declarations[(input wire x)])) = [] := rfl
+example : outputPorts (some (ascii_apply "list_of_port_declarations" "EOF" [(input wire x)]"EOF")) = [] := rfl
 
-example : inputPorts (some (list_of_port_declarations[
+example : inputPorts (some (ascii_apply "list_of_port_declarations" "EOF" [
     (input a,b, output reg c, input wire x)
-  ])) = [(`a, ``Wire), (`b, ``Wire), (`x, ``Wire)] := rfl
+  ]"EOF")) = [(`a, ``Wire), (`b, ``Wire), (`x, ``Wire)] := rfl
 
-example : inputPortNames (some (list_of_port_declarations[
+example : inputPortNames (some (ascii_apply "list_of_port_declarations" "EOF" [
     (input wire a,b, output reg c,d, input wire x,y)
-  ])) = [`a, `b, `x, `y] := rfl
+  ]"EOF")) = [`a, `b, `x, `y] := rfl
 
-example : inputPortNames (some (list_of_port_declarations[()])) = [] := rfl
+example : inputPortNames (some (ascii_apply "list_of_port_declarations" "EOF" [()]"EOF")) = [] := rfl
 example : inputPortNames none = [] := rfl
 
 namespace portParameterTests
 
 run_cmd do
-  let item := module_item[
+  let item := ascii_apply "module_item" "EOF" [
     always @(posedge clk) begin
-      out <= «in»;
+      out <= in;
     end
-  ]
+  ]"EOF"
   match moduleItemAssignments item with
   | .ok [assignment] =>
     unless assignment.target == `out && assignment.dependencies == [Lean.Name.mkSimple "in"] &&
@@ -35,19 +35,19 @@ run_cmd do
       throwError "incorrect module assignment extraction"
   | _ => throwError "expected one module assignment"
 
-verilog[
+verilog "EOF" [
   module no_inputs();
   endmodule
   module multiple_inputs(input wire x,y, output wire result, input wire z);
   endmodule
   module multiple_outputs(input wire x, output reg a,b, output wire c);
   endmodule
-  module D(input wire clk, input wire «in», output reg out);
+  module D(input wire clk, input wire in, output reg out);
     always @(posedge clk) begin
-      out <= «in»;
+      out <= in;
     end
   endmodule
-]
+]"EOF"
 
 theorem Dff_posedge (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1) < clock n) :
   portParameterTests.D clock dataSignal n = dataSignal (n-1) := by
@@ -85,24 +85,28 @@ theorem Dff_posedge (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (
   --       let f_eq_f :false = false :=by rfl
   --       simp
 
-verilog[
-    module Dff(input wire clk, input wire «in»,a, output reg out, output reg out1);
+verilog "EOF" [
+  module Dff(input wire clk, input wire in,a, output reg out, output reg out1);
     always @(posedge clk) begin
-      out <= «in» ;
+      out <= in ;
       out1 <= a;
     end
   endmodule
-]
+]"EOF"
 #print Dff
 
 example : Unit := no_inputs
 example : Wire → Wire → Reg := D
-example (clock dataSignal : Wire) :
-  D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := rfl
+theorem D_eq_always (clock dataSignal : Wire) :
+    D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := by
+  dsimp [D]
+  congr 1 <;> funext time <;> cases time <;> simp [postedge]
 example (clock first second : Wire) :
   Dff clock first second =
     («always» first Bool.false (postedge clock),
-     «always» second Bool.false (postedge clock)) := rfl
+     «always» second Bool.false (postedge clock)) := by
+  apply Prod.ext <;>
+    (dsimp [Dff]; congr 1 <;> funext time <;> cases time <;> simp [postedge])
 example (clock dataSignal : Wire) : D clock dataSignal 0 = Bool.false := rfl
 example (clock dataSignal : Wire) (time : Nat) :
     D clock dataSignal (time + 1) =
@@ -131,10 +135,10 @@ end portParameterTests
 
 namespace generatedFunctions
 
-verilog[
+verilog[ascii_apply "source_text" "EOF" [
   module generated_example(input wire x);
   endmodule
-]
+]"EOF"]
 
 #check generated_example
 #print generated_example
@@ -153,16 +157,24 @@ run_cmd do
 -- set_option trace.Elab.definition true
 set_option trace.Elab.command true
 
-verilog[
-  module D(input wire clk, input wire «in», output reg out);
+verilog "EOF" [
+  module D(input wire clk, input wire in, output reg out);
     always @(posedge clk) begin
-      out <= «in»;
+      out <= in;
     end
   endmodule
-]
+]"EOF"
+
+#print D
+
+theorem D_eq_always (clock dataSignal : Wire) :
+    D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := by
+  dsimp [D]
+  congr 1 <;> funext time <;> cases time <;> simp [postedge]
 
 theorem Dff_hold (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1) = clock n) :
   D clock dataSignal n = D clock dataSignal (n-1) := by
+  rw [D_eq_always]
   apply «always».hold dataSignal Bool.false (postedge clock) n h
   have noEdge : postedge clock n = Bool.false :=
     (postedge.not_post clock n h).mp (by
@@ -173,6 +185,7 @@ theorem Dff_hold (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1
 
 theorem Dff_posedge (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1) < clock n) :
   D clock dataSignal n = dataSignal (n-1) := by
+  rw [D_eq_always]
   apply «always».condition dataSignal Bool.false (postedge clock) n h
   apply (postedge.post clock n h).mp
   cases previous : clock (n - 1) <;>

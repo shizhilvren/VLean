@@ -55,27 +55,90 @@ structure ModuleAssignment where
   dependencies : List Lean.Name
   value : VL.expression
   clock : Option VL.expression
+  event : Option VL.event_expression := none
+  guards : List (VL.expression × Bool) := []
 
 def expressionVariables (expr : VL.expression) : List Lean.Name :=
   match expr with
   | .identifier id => [id.getName]
+  | .primary (.hierarchical_identifier (.identifier id)) => [id.getName]
+  | .primary (.number _) => []
+  | .unary_operator _ (.hierarchical_identifier (.identifier id)) => [id.getName]
+  | .unary_operator _ (.number _) => []
+
+def eventVariables : VL.event_expression → List Lean.Name
+  | .posedge value | .negedge value => expressionVariables value
+  | .or left right => eventVariables left ++ eventVariables right
 
 partial def statementAssignments (stmt : VL.statement)
-    (clock : Option VL.expression := none) : Except String (List ModuleAssignment) := do
+    (clock : Option VL.expression := none)
+    (event : Option VL.event_expression := none)
+    (guards : List (VL.expression × Bool) := []) : Except String (List ModuleAssignment) := do
   match stmt with
   | .nonblocking_assignment assignment =>
     let target := match assignment.variable_lvalue with
       | .identifier id => id.getName
     return [ModuleAssignment.mk target (expressionVariables assignment.expression)
-      assignment.expression clock]
+      assignment.expression clock event guards]
   | .seq_block (.statements statements) =>
-    return (← statements.mapM fun statement => statementAssignments statement clock).flatten
+    return (← statements.mapM fun statement => statementAssignments statement clock event guards).flatten
+  | .conditional_statement conditional =>
+    let .statement thenBody := conditional.then_stmt
+    let thenAssignments ← statementAssignments thenBody clock event (guards ++ [(conditional.cond, true)])
+    let elseAssignments ← match conditional.else_stmt with
+      | none => pure []
+      | some (.statement body) =>
+        statementAssignments body clock event (guards ++ [(conditional.cond, false)])
+    return thenAssignments ++ elseAssignments
   | .procedural_timing_control_statement timing =>
-    if clock.isSome then
+    if event.isSome || clock.isSome then
       throw "nested event controls are not supported"
-    let .event_control (.event_expression (.posedge edge)) := timing.procedural_timing_control
+    let .event_control (.event_expression edge) := timing.procedural_timing_control
     let .statement body := timing.statement_or_null
-    statementAssignments body (some edge)
+    let clock := match edge with
+      | .posedge value => some value
+      | _ => none
+    statementAssignments body clock (some edge) guards
+
+def expressionTerm (value : VL.expression) : Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+  let primaryTerm (value : VL.primary) : Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+    match value with
+    | .hierarchical_identifier (.identifier id) => return Lean.mkIdent id.getName
+    | .number (.binary_number number) =>
+      if number.size.any (· != 1) || !number.binary_value.binary_digits.isEmpty then
+        throwError "only single-bit binary constants are supported"
+      match number.binary_value.binary_digit with
+      | .char_0 => `(term| fun _ : Nat => Bool.false)
+      | .char_1 => `(term| fun _ : Nat => Bool.true)
+      | _ => throwError "x/z constants are not supported by the Bool runtime"
+  match value with
+  | .identifier id => return Lean.mkIdent id.getName
+  | .primary value => primaryTerm value
+  | .unary_operator .not value =>
+    let signal ← primaryTerm value
+    `(term| fun time : Nat => !($signal time))
+
+partial def eventTerm (event : VL.event_expression) : Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+  match event with
+  | .posedge value =>
+    let value ← expressionTerm value
+    `(term| postedge $value)
+  | .negedge value =>
+    let value ← expressionTerm value
+    `(term| negedge $value)
+  | .or left right =>
+    let left ← eventTerm left
+    let right ← eventTerm right
+    `(term| fun time : Nat => $left time || $right time)
+
+def guardsTerm (guards : List (VL.expression × Bool)) :
+    Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+  let mut result ← `(term| fun _ : Nat => Bool.true)
+  for (condition, positive) in guards do
+    let condition ← expressionTerm condition
+    let condition ← if positive then pure condition else `(term| fun time : Nat => !($condition time))
+    result ← `(term| fun time : Nat => $result time && $condition time)
+  return result
 
 def moduleItemAssignments (item : VL.module_item) : Except String (List ModuleAssignment) :=
   match item with
@@ -90,20 +153,25 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
 
   let input_ver := inputPorts module_declaration.list_of_port_declarations
   let output_ver := outputPorts module_declaration.list_of_port_declarations
-  let assignments ← match module_declaration.module_items.mapM moduleItemAssignments with
-    | .ok items => pure items.flatten
+  let assignmentGroups ← match module_declaration.module_items.mapM moduleItemAssignments with
+    | .ok items => pure items
     | .error message => throwError "{message}"
+  let assignments := assignmentGroups.flatten
   let mut assigned : List Lean.Name := []
+  for group in assignmentGroups do
+    let targets := (group.map (·.target)).eraseDups
+    for target in targets do
+      if assigned.contains target then
+        throwError "multiple always blocks drive {target}"
+    assigned := assigned ++ targets
   for assignment in assignments do
     unless output_ver.any (fun port => port.1 == assignment.target && port.2 == ``Reg) do
       throwError "assignment target must be an output reg: {assignment.target}"
-    if assigned.contains assignment.target then
-      throwError "multiple assignments to {assignment.target} are not supported"
-    assigned := assignment.target :: assigned
-    unless assignment.clock.isSome do
-      throwError "assignment to {assignment.target} requires a posedge event"
-    let clockVariables := assignment.clock.toList.flatMap expressionVariables
-    for dependency in assignment.dependencies ++ clockVariables do
+    unless assignment.event.isSome do
+      throwError "assignment to {assignment.target} requires an edge event"
+    let clockVariables := assignment.event.toList.flatMap eventVariables
+    let guardVariables := assignment.guards.flatMap (fun guard => expressionVariables guard.1)
+    for dependency in assignment.dependencies ++ clockVariables ++ guardVariables do
       unless input_ver.any (fun port => port.1 == dependency) do
         throwError "only input signals are supported as dependencies: {dependency}"
   let inputs ← input_ver.toArray.mapM fun (portName, typeName) => do
@@ -130,15 +198,23 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
   for (name, typeName) in output_ver.reverse do
     let portName := Lean.mkIdent name
     let portType : Lean.TSyntax `term := Lean.mkIdent typeName
-    let value ← match assignments.find? (fun assignment => assignment.target == name) with
-      | none => `(term| fun _ => Bool.false)
-      | some assignment =>
-        match assignment.clock, assignment.value with
-        | some (.identifier clock), .identifier dataSignal =>
-          let clockName := Lean.mkIdent clock.getName
-          let inputName := Lean.mkIdent dataSignal.getName
-          `(term| «always» $inputName:ident Bool.false (postedge $clockName:ident))
-        | none, _ => throwError "expected a posedge event"
+    let drivers := assignments.filter (fun assignment => assignment.target == name)
+    let value ← match drivers with
+      | [] => `(term| fun _ => Bool.false)
+      | first :: _ =>
+        let some event := first.event | throwError "expected an edge event"
+        let trigger ← eventTerm event
+        let mut data ← `(term| fun _ : Nat => Bool.false)
+        let mut enabled ← `(term| fun _ : Nat => Bool.false)
+        for driver in drivers do
+          let guard ← guardsTerm driver.guards
+          let next ← expressionTerm driver.value
+          data ← `(term| fun time : Nat => if $guard time then $next time else $data time)
+          enabled ← `(term| fun time : Nat => $enabled time || $guard time)
+        let trigger ← `(term| fun time : Nat => match time with
+          | 0 => Bool.false
+          | previous + 1 => $trigger (previous + 1) && $enabled previous)
+        `(term| «always» $data Bool.false $trigger)
     codeB ← `(term| let $portName:ident : $portType := $value
                    $codeB)
   let code ← `(command| def $codeA:ident $[$inputs:bracketedBinder]* : $outputs := $codeB)
@@ -158,18 +234,8 @@ def code_gen_source_text (source : VL.source_text) : Lean.Elab.Command.CommandEl
     code_gen_description h
     code_gen_source_text (VL.source_text.description t)
 
-syntax (name := verilogCommand) "verilog[" source_text "]" : command
+macro "verilog[" source:term "]" : command =>
+  `(command| run_cmd code_gen_source_text ($source : VL.source_text))
 
-@[command_elab verilogCommand]
-unsafe def elabVerilog : Lean.Elab.Command.CommandElab := fun stx => do
-  match stx with
-  | `(command| verilog[ $code:source_text ]) =>
-    let source ← Lean.Elab.Command.liftTermElabM do
-      let term ← `(term| source_text[ $code:source_text ])
-      let expr ← Lean.Elab.Term.elabTermEnsuringType term (Lean.mkConst ``VL.source_text)
-      let expr ← Lean.instantiateMVars expr
-      if expr.hasMVar || expr.hasFVar || expr.hasLooseBVars then
-        throwError "expected a closed VL.source_text"
-      Lean.Meta.evalExpr VL.source_text (Lean.mkConst ``VL.source_text) expr
-    code_gen_source_text source
-  | _ => Lean.Elab.throwUnsupportedSyntax
+macro "verilog" checksum:str "[" source:asciiRaw "]" closing:str : command =>
+  `(command| verilog[ascii_apply "source_text" $checksum:str [$source:asciiRaw] $closing:str])

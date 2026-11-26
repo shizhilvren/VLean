@@ -34,6 +34,48 @@ lake env lean --run tests/dff_waveform.lean
 
 The waveform runner writes `tests/dff_waveform.html`.
 
+Generate module definitions from ASCII Verilog using matching delimiters:
+
+```lean
+import vc.verilog
+
+verilog "EOF" [
+	module enabled_ff(input wire clk, en, data, output reg result);
+		always @(posedge clk) begin
+			if (en) result <= data;
+		end
+	endmodule
+]"EOF"
+```
+
+The opening and closing strings must match. Whitespace, punctuation, and
+parentheses inside the source are handled by the ASCII parser.
+The command `verilog[ast]` accepts any expression of type `VL.source_text`,
+including `verilog[ascii_apply "source_text" "EOF" [...]"EOF"]`.
+Replace the old raw-source command `verilog[module ... endmodule]` with the
+delimited form above.
+
+The module generator supports single-bit identifiers, hierarchical-identifier
+AST nodes containing a simple identifier, binary `0`/`1` constants, logical
+negation, sequential blocks, nested `if`/`else`, and `posedge`/`negedge` events
+combined with `or`. Missing branches hold the previous register value. Within
+one block, the last executed assignment to a register wins; separate blocks
+driving the same register are rejected.
+
+Generated definitions use the discrete `Bool` runtime: registers start at
+`false`, events are detected at step `n + 1`, and both conditions and right-hand
+sides are sampled at step `n`. This also applies to reset conditions, and is
+not Verilog delta-cycle or continuous-time asynchronous-reset simulation.
+Dependencies must be input signals and assignment targets must be output regs.
+Vectors, `x`/`z` constants, feedback, and nested event controls are rejected.
+Undriven outputs retain the existing constant-`false` behavior.
+
+Run the ASCII code generation behavior and diagnostic checks with:
+
+```console
+lake build tests.codegen_ascii
+```
+
 Code that only needs the signal types and sampling function can use
 `import vc.runtime.Signals` without loading the Verilog parser or generator.
 The dependency direction is `vc.verilog -> vc.codegen.Verilog -> vc.runtime.Signals`;

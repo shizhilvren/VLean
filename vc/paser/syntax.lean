@@ -61,7 +61,7 @@ syntax keyword_negedge ascii_spaces expression : event_expression
 syntax event_expression atomic(ascii_spaces keyword_or ascii_spaces event_expression) : event_expression
 
 -- A.6.6 Conditional statements
-syntax ascii_spaces keyword_if ascii_spaces char_open_paren ascii_spaces expression ascii_spaces char_close_paren ascii_spaces statement_or_null (keyword_else ascii_spaces statement_or_null)? : conditional_statement
+syntax ascii_spaces keyword_if ascii_spaces char_open_paren ascii_spaces expression ascii_spaces char_close_paren ascii_spaces statement_or_null (atomic(keyword_else ascii_spaces statement_or_null))? : conditional_statement
 
 -- A.8.3 Expressions
 syntax primary : expression
