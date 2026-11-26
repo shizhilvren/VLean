@@ -31,7 +31,7 @@ macro_rules
     `(term| VL.binary_number.mk $base $value (some $(Lean.quote width)))
 
 macro_rules
-  | `(term|source_text[ $ds:description* ])
+  | `(term|source_text[ $_:ascii_spaces $ds:description* $_:ascii_spaces ])
     => do
       let items ← ds.mapM fun description => `(term| description[ $description ])
       `(term| VL.source_text.description [$items,*])
@@ -43,10 +43,8 @@ macro_rules
       `(term| VL.description.module_declaration $item)
 
 macro_rules
-  | `(term|module_keyword[ module ])
-    => `(term| VL.module_keyword.module)
-  | `(term|module_keyword[ macromodule ])
-    => `(term| VL.module_keyword.macromodule)
+  | `(term|module_keyword[ $_:keyword_module ]) => `(term| VL.module_keyword.module)
+  | `(term|module_keyword[ $_:keyword_macromodule ]) => `(term| VL.module_keyword.macromodule)
 
 macro_rules
   | `(term|module_identifier[ $d:identifier ])
@@ -61,34 +59,22 @@ macro_rules
       `(term| VL.identifier.ident (Lean.Name.mkSimple $name))
 
 macro_rules
-  | `(term|module_declaration[
-    $d:module_keyword
-    $i:module_identifier
-    $[$l:list_of_port_declarations]?
-    ;
-    $[$items:module_item]*
-    endmodule ])
-    => do
-      let d' ← `(term| module_keyword[ $d ])
-      let i' ← `(term| module_identifier[ $i ])
-      let l' ← match l with
+  | `(term|module_declaration[ $_:ascii_spaces $kind:module_keyword $_:ascii_spaces $name:module_identifier $_:ascii_spaces $[$ports:list_of_port_declarations]? $_:ascii_spaces $_:char_semicolon $_:ascii_spaces $[$items:module_item]* $_:keyword_endmodule $_:ascii_spaces ]) => do
+      let kind ← `(term| module_keyword[ $kind ])
+      let name ← `(term| module_identifier[ $name ])
+      let ports ← match ports with
         | none => `(term| none)
-        | some l => `(term| some (list_of_port_declarations[ $l ]))
-      let items' ← items.mapM fun item => `(term| module_item[ $item ])
-      `(term| VL.module_declaration.mk $d' $i' $l' [$items',*])
+        | some ports => `(term| some (list_of_port_declarations[ $ports ]))
+      let items ← items.mapM fun item => `(term| module_item[ $item ])
+      `(term| VL.module_declaration.mk $kind $name $ports [$items,*])
 
 macro_rules
-  | `(term|list_of_port_declarations[ () ])
-    => `( term| VL.list_of_port_declarations.empty )
-  | `(term|list_of_port_declarations[ (  $p:port_declaration ) ])
-    => do
-      let p' ← `(term| port_declaration[ $p ])
-      `(term| VL.list_of_port_declarations.port_declaration $p' []  )
-  | `(term|list_of_port_declarations[ (  $p:port_declaration $[, $p2]*) ])
-    => do
-      let p' ← `(term| port_declaration[ $p ])
-      let p2' ← p2.mapM fun p => `(term| port_declaration[ $p ])
-      `(term| VL.list_of_port_declarations.port_declaration  $p' [$p2',*]  )
+  | `(term|list_of_port_declarations[ $_:ascii_spaces $_:char_open_paren $_:ascii_spaces $_:char_close_paren $_:ascii_spaces ]) =>
+      `(term| VL.list_of_port_declarations.empty)
+  | `(term|list_of_port_declarations[ $_:ascii_spaces $_:char_open_paren $_:ascii_spaces $first:port_declaration $[$_:ascii_spaces $_:char_comma $_:ascii_spaces $rest:port_declaration]* $_:ascii_spaces $_:char_close_paren $_:ascii_spaces ]) => do
+      let first ← `(term| port_declaration[ $first ])
+      let rest ← rest.mapM fun port => `(term| port_declaration[ $port ])
+      `(term| VL.list_of_port_declarations.port_declaration $first [$rest,*])
 
 macro_rules
   | `(term|port_declaration[ $d:input_declaration ])
@@ -101,41 +87,32 @@ macro_rules
       `(term| VL.port_declaration.output_declaration $d')
 
 macro_rules
-  | `(term|input_declaration[ input $[$t]? $ps ])
-    => do
-      let t' ← match t with
+  | `(term|input_declaration[ $_:keyword_input $_:ascii_spaces $[$kind:net_type]? $_:ascii_spaces $ports:list_of_port_identifiers ]) => do
+      let kind ← match kind with
         | none => `(term| none)
-        | some t => `(term| some (net_type[ $t ]))
-      let ps' ← `(term| list_of_port_identifiers[ $ps ])
-      `(term| VL.input_declaration.mk $t' $ps')
+        | some kind => `(term| some (net_type[ $kind ]))
+      let ports ← `(term| list_of_port_identifiers[ $ports ])
+      `(term| VL.input_declaration.mk $kind $ports)
 
 macro_rules
-  | `(term|output_declaration[ output $[$t]? $ps ])
-    => do
-      let t' ← match t with
+  | `(term|output_declaration[ $_:keyword_output $_:ascii_spaces $_:keyword_reg $_:ascii_spaces $ports:list_of_port_identifiers ]) => do
+      let ports ← `(term| list_of_port_identifiers[ $ports ])
+      `(term| VL.output_declaration.output_reg $ports)
+  | `(term|output_declaration[ $_:keyword_output $_:ascii_spaces $[$kind:net_type]? $_:ascii_spaces $ports:list_of_port_identifiers ]) => do
+      let kind ← match kind with
         | none => `(term| none)
-        | some t => `(term| some (net_type[ $t ]))
-      let ps' ← `(term| list_of_port_identifiers[ $ps ])
-      `(term| VL.output_declaration.output $t' $ps')
-  | `(term|output_declaration[ output reg $ps ])
-    => do
-      let ps' ← `(term| list_of_port_identifiers[ $ps ])
-      `(term| VL.output_declaration.output_reg $ps')
+        | some kind => `(term| some (net_type[ $kind ]))
+      let ports ← `(term| list_of_port_identifiers[ $ports ])
+      `(term| VL.output_declaration.output $kind $ports)
 
 macro_rules
-  | `(term|list_of_port_identifiers[ $p1:port_identifier])
-    => do
-      let p' ← `(term| port_identifier[ $p1 ])
-      `(term| (VL.list_of_port_identifiers.port_identifier $p' []))
-  | `(term|list_of_port_identifiers[ $p1:port_identifier $[, $p2]* ])
-    => do
-      let p' ← `(term| port_identifier[ $p1 ])
-      let p2' ← p2.mapM fun p => `(term| port_identifier[ $p ])
-      `(term| (VL.list_of_port_identifiers.port_identifier $p' [$p2',*]))
+  | `(term|list_of_port_identifiers[ $first:port_identifier $[$_:ascii_spaces $_:char_comma $_:ascii_spaces $rest:port_identifier]* ]) => do
+      let first ← `(term| port_identifier[ $first ])
+      let rest ← rest.mapM fun port => `(term| port_identifier[ $port ])
+      `(term| VL.list_of_port_identifiers.port_identifier $first [$rest,*])
 
 macro_rules
-  | `(term|net_type[ wire ])
-    => `(term| VL.net_type.wire)
+  | `(term|net_type[ $_:keyword_wire ]) => `(term| VL.net_type.wire)
 
 macro_rules
   | `(term|port_identifier[ $d:identifier ])
@@ -227,7 +204,7 @@ macro_rules
     => do
       let d' ← `(term| identifier[ $d ])
       `(term| VL.expression.identifier $d')
-  | `(term|expression[ ( $value:expression ) ])
+  | `(term|expression[ $_:char_open_paren $_:ascii_spaces $value:expression $_:ascii_spaces $_:char_close_paren ])
     => `(term| expression[ $value ])
   | `(term|expression[ $primary:primary ])
     => do

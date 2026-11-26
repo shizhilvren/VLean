@@ -9,28 +9,29 @@ open Lean Parser
 
 
 -- A.1.2 Verilog source text
-syntax description* : source_text
+syntax ascii_spaces (atomic(description))* ascii_spaces : source_text
 syntax module_declaration : description
-syntax
-  module_keyword
-  module_identifier
-  (list_of_port_declarations)?
-  ";"
-  module_item*
-  "endmodule" : module_declaration
-syntax ("module" <|> "macromodule"): module_keyword
+syntax keyword_module : module_keyword
+syntax keyword_macromodule : module_keyword
+syntax ascii_spaces module_keyword ascii_spaces module_identifier ascii_spaces
+  (list_of_port_declarations)? ascii_spaces char_semicolon ascii_spaces
+  (atomic(module_item))* keyword_endmodule ascii_spaces : module_declaration
 
 -- A.1.3 Module parameters and ports
-syntax "(" port_declaration (atomic("," port_declaration))* ")" : list_of_port_declarations
-syntax "(" ")" : list_of_port_declarations
 syntax input_declaration : port_declaration
 syntax output_declaration : port_declaration
 syntax ident : output_declaration
-syntax "input" (net_type)? list_of_port_identifiers : input_declaration
-syntax "output" (net_type)? list_of_port_identifiers : output_declaration
-syntax "output" "reg" list_of_port_identifiers : output_declaration
-syntax "wire" : net_type
-syntax port_identifier (atomic("," port_identifier))* : list_of_port_identifiers
+syntax ascii_spaces char_open_paren ascii_spaces char_close_paren ascii_spaces : list_of_port_declarations
+syntax ascii_spaces char_open_paren ascii_spaces port_declaration
+  (atomic(ascii_spaces char_comma ascii_spaces port_declaration))*
+  ascii_spaces char_close_paren ascii_spaces : list_of_port_declarations
+syntax keyword_input ascii_spaces (net_type)? ascii_spaces list_of_port_identifiers : input_declaration
+syntax keyword_output ascii_spaces (net_type)? ascii_spaces list_of_port_identifiers : output_declaration
+syntax keyword_output ascii_spaces keyword_reg ascii_spaces list_of_port_identifiers : output_declaration
+syntax keyword_wire : net_type
+syntax port_identifier
+  (atomic(ascii_spaces char_comma ascii_spaces
+    notFollowedBy(keyword_input <|> keyword_output) port_identifier))* : list_of_port_identifiers
 
 -- A.1.4 Module items
 syntax module_or_generate_item : module_item
@@ -67,7 +68,7 @@ syntax primary : expression
 syntax identifier : expression
 syntax unary_operator primary : expression
 syntax unary_operator ascii_spaces primary : expression
-syntax "(" expression ")" : expression
+syntax char_open_paren ascii_spaces expression ascii_spaces char_close_paren : expression
 
 -- A.8.4 Primaries
 syntax number : primary
