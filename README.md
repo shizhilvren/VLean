@@ -76,6 +76,22 @@ Run the ASCII code generation behavior and diagnostic checks with:
 lake build tests.codegen_ascii
 ```
 
+### Asynchronous reset example
+
+`tests/dff_async_reset.lean` contains an active-low asynchronous-reset Verilog
+D flip-flop. All proofs concern the generated `AsyncReset.sampledDff` directly;
+there is no separate reference implementation.
+The proofs cover its recurrence, initialization, previous-step reset priority,
+rising-edge capture, holding without an event, reset release, and constant
+reset levels. The generator samples both reset conditions and data from the
+previous step. Consequently, a falling reset edge loads previous-step data
+instead of immediately clearing the output. `generated_reset_sampling_gap`
+proves this limitation with a concrete counterexample.
+
+```console
+lake build tests.dff_async_reset
+```
+
 Code that only needs the signal types and sampling function can use
 `import vc.runtime.Signals` without loading the Verilog parser or generator.
 The dependency direction is `vc.verilog -> vc.codegen.Verilog -> vc.runtime.Signals`;
