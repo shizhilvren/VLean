@@ -2,6 +2,11 @@ import vc.verilog
 
 namespace AsyncReset
 
+-- set_option pp.rawOnError true
+-- set_option trace.Elab.step true
+-- set_option trace.Elab.definition true
+set_option trace.Elab.command true
+
 verilog "EOF" [
   module sampledDff(input wire clk, rst_n, data, output reg result);
     always @(posedge clk or negedge rst_n) begin
@@ -27,7 +32,7 @@ theorem step (clock resetN dataSignal : Wire) (time : Nat) :
     cases resetAfter : resetN (time + 1) <;>
       cases clockBefore : clock time <;>
         cases clockAfter : clock (time + 1) <;>
-          simp [sampledDff, «always», postedge, negedge,
+          simp [sampledDff, «always», «if», postedge, negedge,
             resetBefore, resetAfter, clockBefore, clockAfter]
 
 theorem reset_sampled (clock resetN dataSignal : Wire) (time : Nat)

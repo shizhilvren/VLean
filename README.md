@@ -70,6 +70,44 @@ Dependencies must be input signals and assignment targets must be output regs.
 Vectors, `x`/`z` constants, feedback, and nested event controls are rejected.
 Undriven outputs retain the existing constant-`false` behavior.
 
+### Recursive statement generation
+
+`statementTerm stmt target previous` recursively compiles a `VL.statement`
+for one output into `StatementCode` (data signal, write-enable signal, and
+optional event). Assignments replace the pending value; sequential blocks
+thread this state through their statements in source order. Conditional
+statements combine recursively generated branches using `Signals`' `if`
+function. A missing branch preserves the incoming state rather than writing
+zero. Timing-control statements attach an event and recursively compile
+their body.
+
+`code_gen_statement stmt target` starts with an empty pending write and returns
+a Lean term for a `Reg`. Statements guaranteed to write the target use the
+runtime `always` function with only the event signal as its condition.
+Statements that may omit a write use a local structurally recursive register
+expression: the event controls execution, and the data-path `if` selects the
+pending value or the previous register value. No enabled-always runtime helper
+is introduced. This entry point
+requires an event; use `statementTerm` for a plain assignment or conditional
+without an event. Both functions run in `Lean.Elab.Command.CommandElabM`.
+The module generator uses these recursive functions for output generation;
+the assignment list is retained only for dependency and driver validation.
+Module port validation is not performed by the standalone statement API.
+The previous-step sampling convention is unchanged.
+
+Each statement result is bound once to a fresh local `let` variable containing
+its data and write-enable signals. Subsequent statements refer to the pair's
+projections instead of duplicating the earlier expressions. Conditions and
+event signals also receive local bindings. Sequential overwrite is represented
+by a new result variable; existing variables remain immutable. The final
+register term shares all bindings in a single enclosing `let` chain.
+The standalone `statementTerm` API returns closed expressions for each field,
+so those fields can still be elaborated independently.
+
+```console
+lake build tests.statement_codegen tests.codegen_ascii
+```
+
 Run the ASCII code generation behavior and diagnostic checks with:
 
 ```console
@@ -91,6 +129,35 @@ proves this limitation with a concrete counterexample.
 ```console
 lake build tests.dff_async_reset
 ```
+
+### Waveform visualization
+
+Import `vc.tool.Waveform` to sample and display named `Wire` or `Reg` signals:
+
+```lean
+import vc.tool.Waveform
+
+def showSignals (clock dataSignal result : Wire) : IO Unit := do
+	let traces : List Waveform.Trace :=
+		[("clk", clock), ("data", dataSignal), ("result", result)]
+	IO.println (Waveform.renderText traces 16)
+	Waveform.writeHtml "waveform.html" traces 16 0 "D flip-flop"
+```
+
+The arguments after the trace list are sample count and optional start time
+(default `0`). `renderHtml` returns a self-contained HTML string with digital
+waveforms and a sample table; `writeHtml` writes it to an existing directory.
+`samples signal count start` returns the sampled Boolean values.
+
+Run the tested asynchronous-reset example and open its generated HTML directly:
+
+```console
+lake build vc.tool.Waveform tests.dff_async_reset
+lake env lean --run tests/waveform.lean
+```
+
+The output is `tests/async_reset_waveform.html`; it displays the generated
+signal's actual behavior without changing the simulation semantics.
 
 Code that only needs the signal types and sampling function can use
 `import vc.runtime.Signals` without loading the Verilog parser or generator.

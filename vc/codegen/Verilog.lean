@@ -3,6 +3,7 @@ import vc.paser.syntax_tree
 import vc.paser.token
 import vc.paser.rules
 import vc.runtime.Signals
+-- set_option trace.Meta.synthInstance true
 
 def portTypeName (pd : VL.port_declaration) : Lean.Name :=
   match pd with
@@ -144,6 +145,104 @@ def moduleItemAssignments (item : VL.module_item) : Except String (List ModuleAs
   match item with
   | .module_or_generate_item (.always_construct (.always stmt)) => statementAssignments stmt
 
+structure StatementCode where
+  data : Lean.TSyntax `term
+  enabled : Lean.TSyntax `term
+  event : Option (Lean.TSyntax `term) := none
+
+abbrev StatementBindings := Array (Lean.TSyntax `ident × Lean.TSyntax `term)
+
+def bindStatementTerm (value : Lean.TSyntax `term) :
+    StateT StatementBindings Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+  let fresh ← liftM (Lean.Elab.Command.liftCoreM (Lean.mkFreshUserName `statement))
+  let name := Lean.mkIdent fresh
+  modify fun bindings => bindings.push (name, value)
+  return name
+
+def closeStatementTerm (bindings : StatementBindings) (value : Lean.TSyntax `term) :
+    Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+  bindings.foldrM (fun (name, definition) body =>
+    `(term| let $name:ident := $definition; $body)) value
+
+partial def statementTermAux (stmt : VL.statement) (target : Lean.Name)
+    (previous : StatementCode) :
+    StateT StatementBindings Lean.Elab.Command.CommandElabM StatementCode := do
+  let code ← match stmt with
+  | .nonblocking_assignment assignment =>
+    let .identifier identifier := assignment.variable_lvalue
+    if identifier.getName != target then
+      pure previous
+    else
+      pure { previous with
+        data := ← expressionTerm assignment.expression
+        enabled := ← `(term| fun _ : Nat => Bool.true) }
+  | .seq_block (.statements statements) =>
+    statements.foldlM (fun code statement => statementTermAux statement target code) previous
+  | .conditional_statement conditional =>
+    let condition ← bindStatementTerm (← expressionTerm conditional.cond)
+    let .statement thenBody := conditional.then_stmt
+    let thenCode ← statementTermAux thenBody target previous
+    let elseCode ← match conditional.else_stmt with
+      | none => pure previous
+      | some (.statement elseBody) => statementTermAux elseBody target previous
+    pure {
+      data := ← `(term| «if» $condition $(thenCode.data) $(elseCode.data))
+      enabled := ← `(term| «if» $condition $(thenCode.enabled) $(elseCode.enabled))
+      event := thenCode.event.or elseCode.event }
+  | .procedural_timing_control_statement timing =>
+    if previous.event.isSome then
+      throwError "nested event controls are not supported"
+    let .event_control (.event_expression event) := timing.procedural_timing_control
+    let .statement body := timing.statement_or_null
+    let event ← bindStatementTerm (← eventTerm event)
+    statementTermAux body target { previous with event := some event }
+  let value ← bindStatementTerm (← `(term| ($(code.data), $(code.enabled))))
+  return { code with
+    data := ← `(term| $value.1)
+    enabled := ← `(term| $value.2) }
+
+def statementTerm (stmt : VL.statement) (target : Lean.Name)
+    (previous : StatementCode) : Lean.Elab.Command.CommandElabM StatementCode := do
+  let (code, bindings) ← (statementTermAux stmt target previous).run #[]
+  return {
+    data := ← closeStatementTerm bindings code.data
+    enabled := ← closeStatementTerm bindings code.enabled
+    event := ← code.event.mapM (closeStatementTerm bindings) }
+
+partial def statementAlwaysWrites (stmt : VL.statement) (target : Lean.Name) : Bool :=
+  match stmt with
+  | .nonblocking_assignment assignment =>
+    let .identifier identifier := assignment.variable_lvalue
+    identifier.getName == target
+  | .seq_block (.statements statements) =>
+    statements.any (fun statement => statementAlwaysWrites statement target)
+  | .conditional_statement conditional =>
+    let .statement thenBody := conditional.then_stmt
+    statementAlwaysWrites thenBody target &&
+      conditional.else_stmt.any (fun (.statement body) => statementAlwaysWrites body target)
+  | .procedural_timing_control_statement timing =>
+    let .statement body := timing.statement_or_null
+    statementAlwaysWrites body target
+
+def code_gen_statement (stmt : VL.statement) (target : Lean.Name) :
+    Lean.Elab.Command.CommandElabM (Lean.TSyntax `term) := do
+  let initial ← `(term| fun _ : Nat => Bool.false)
+  let (code, bindings) ← (statementTermAux stmt target
+    { data := initial, enabled := initial }).run #[]
+  let some event := code.event | throwError "assignment to {target} requires an edge event"
+  let result ← if statementAlwaysWrites stmt target then
+    `(term| «always» $(code.data) Bool.false $event)
+  else
+    `(term| let rec result (time : Nat) : Bool :=
+      match time with
+      | 0 => Bool.false
+      | previous + 1 =>
+        if $event (previous + 1) then
+          «if» $(code.enabled) $(code.data) (fun _ => result previous) previous
+        else result previous
+      result)
+  closeStatementTerm bindings result
+
 def code_gen_module_declaration (module_declaration : VL.module_declaration) : Lean.Elab.Command.CommandElabM Unit := do
   let name := module_declaration.module_identifier
   let name := match name with
@@ -164,6 +263,7 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
       if assigned.contains target then
         throwError "multiple always blocks drive {target}"
     assigned := assigned ++ targets
+  Lean.logInfo m!"Assignment groups: {assigned}"
   for assignment in assignments do
     unless output_ver.any (fun port => port.1 == assignment.target && port.2 == ``Reg) do
       throwError "assignment target must be an output reg: {assignment.target}"
@@ -178,6 +278,8 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
     let port := Lean.mkIdent portName
     let portType : Lean.TSyntax `term := Lean.mkIdent typeName
     `(bracketedBinder| ($port:ident : $portType))
+  Lean.logInfo m!"Input ports: {inputs}"
+
 
   let rec outputsToLean (ports : List (Lean.Name × Lean.Name)) :
       Lean.Elab.Command.CommandElabM (Lean.TSyntax `term × Lean.TSyntax `term) := do
@@ -202,19 +304,11 @@ def code_gen_module_declaration (module_declaration : VL.module_declaration) : L
     let value ← match drivers with
       | [] => `(term| fun _ => Bool.false)
       | first :: _ =>
-        let some event := first.event | throwError "expected an edge event"
-        let trigger ← eventTerm event
-        let mut data ← `(term| fun _ : Nat => Bool.false)
-        let mut enabled ← `(term| fun _ : Nat => Bool.false)
-        for driver in drivers do
-          let guard ← guardsTerm driver.guards
-          let next ← expressionTerm driver.value
-          data ← `(term| fun time : Nat => if $guard time then $next time else $data time)
-          enabled ← `(term| fun time : Nat => $enabled time || $guard time)
-        let trigger ← `(term| fun time : Nat => match time with
-          | 0 => Bool.false
-          | previous + 1 => $trigger (previous + 1) && $enabled previous)
-        `(term| «always» $data Bool.false $trigger)
+        let some item := (module_declaration.module_items.zip assignmentGroups).find?
+          (fun (_, group) => group.any (fun assignment => assignment.target == first.target))
+          | throwError "missing statement for {name}"
+        let .module_or_generate_item (.always_construct (.always stmt)) := item.1
+        code_gen_statement stmt name
     codeB ← `(term| let $portName:ident : $portType := $value
                    $codeB)
   let code ← `(command| def $codeA:ident $[$inputs:bracketedBinder]* : $outputs := $codeB)

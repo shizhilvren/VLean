@@ -74,7 +74,7 @@ example : reset_ff (fun _ => false) (fun time => time < 2) (fun _ => true) 2 = t
   decide
 
 /-- error: x/z constants are not supported by the Bool runtime -/
-#guard_msgs in
+#guard_msgs (error, drop info) in
 run_cmd code_gen_source_text (ascii_apply "source_text" "EOF" [
   module unknown_value(input wire clk, output reg result);
     always @(posedge clk) begin result <= 1'bx; end
@@ -82,7 +82,7 @@ run_cmd code_gen_source_text (ascii_apply "source_text" "EOF" [
 ]"EOF")
 
 /-- error: only single-bit binary constants are supported -/
-#guard_msgs in
+#guard_msgs (error, drop info) in
 run_cmd code_gen_source_text (ascii_apply "source_text" "EOF" [
   module wide_value(input wire clk, output reg result);
     always @(posedge clk) begin result <= 2'b01; end

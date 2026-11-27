@@ -98,15 +98,11 @@ verilog "EOF" [
 example : Unit := no_inputs
 example : Wire → Wire → Reg := D
 theorem D_eq_always (clock dataSignal : Wire) :
-    D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := by
-  dsimp [D]
-  congr 1 <;> funext time <;> cases time <;> simp [postedge]
+  D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := rfl
 example (clock first second : Wire) :
   Dff clock first second =
     («always» first Bool.false (postedge clock),
-     «always» second Bool.false (postedge clock)) := by
-  apply Prod.ext <;>
-    (dsimp [Dff]; congr 1 <;> funext time <;> cases time <;> simp [postedge])
+     «always» second Bool.false (postedge clock)) := rfl
 example (clock dataSignal : Wire) : D clock dataSignal 0 = Bool.false := rfl
 example (clock dataSignal : Wire) (time : Nat) :
     D clock dataSignal (time + 1) =
@@ -168,9 +164,7 @@ verilog "EOF" [
 #print D
 
 theorem D_eq_always (clock dataSignal : Wire) :
-    D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := by
-  dsimp [D]
-  congr 1 <;> funext time <;> cases time <;> simp [postedge]
+  D clock dataSignal = «always» dataSignal Bool.false (postedge clock) := rfl
 
 theorem Dff_hold (clock dataSignal : Wire) (n:Nat) (h:n>0) (clkEdge : clock (n-1) = clock n) :
   D clock dataSignal n = D clock dataSignal (n-1) := by
